@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eruvaka V&amp;V Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark logo-mark"><img src="assets/eruvaka_logo.jpg" alt="Eruvaka"></div>
+        <div>
+          <div class="brand-name">ERUVAKA</div>
+          <div class="brand-sub">V&amp;V Dashboard</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <button type="button" class="nav-item active" data-view="overview"><span
+            class="nav-icon">▦</span><span>Overview</span></button>
+        <div class="nav-section">
+          <div class="nav-section-title">VALIDATION AREAS</div>
+        </div>
+        <button type="button" class="nav-item" data-view="products"><span
+            class="nav-icon">▦</span><span>Products</span></button>
+        <button type="button" class="nav-item" data-view="sourcing"><span
+            class="nav-icon">◫</span><span>Sourcing</span></button>
+        <button type="button" class="nav-item" data-view="fieldIssues"><span class="nav-icon">⚠</span><span>Field
+            Issues</span></button>
+        <button type="button" class="nav-item" data-view="quality"><span
+            class="nav-icon">✓</span><span>Quality</span></button>
+        <button type="button" class="nav-item" data-view="rnd"><span
+            class="nav-icon">⚗</span><span>R&amp;D</span></button>
+        <button type="button" class="nav-item" data-view="nit"><span class="nav-icon">⚙</span><span>NIT</span></button>
+      </nav>
+      <div class="sidebar-footer"><span class="status-dot"></span></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="breadcrumb" id="breadcrumb">Dashboard / Overview</div>
+          <h1 id="pageTitle">V&amp;V Overview</h1>
+        </div>
+        <div class="topbar-actions"><span class="header-logo"><img src="assets/eruvaka_logo.jpg"
+              alt="Eruvaka"></span><button type="button" class="refresh-btn" id="resetBtn">Reset</button></div>
+      </header>
+
+      <section id="overviewView" class="view active">
+        <div class="page-intro">
+          <div>
+            <h2>Overall V&amp;V Overview</h2>
+            <p>Unified validation status across Products, Sourcing, Field Issues, Quality and R&amp;D.</p>
+          </div>
+        </div>
+        <div class="kpi-grid" id="overviewKpis"></div>
+
+        <div class="section-heading">
+          <div>
+            <h2>Validation Portfolio</h2>
+            <p>Every validation area is displayed using the same test-case metrics.</p>
+          </div>
+        </div>
+
+        <div class="area-section">
+          <div class="area-title">
+            <div><span class="area-icon products">▤</span>
+              <div>
+                <h3>Products</h3>
+                <p>Product and product validation activities.</p>
+              </div>
+            </div>
+            <span id="productCount" class="area-count"></span>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Total TC</th>
+                    <th>Executed</th>
+                    <th>Pass</th>
+                    <th>Fail</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="productsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="area-section">
+          <div class="area-title">
+            <div><span class="area-icon sourcing">🛒</span>
+              <div>
+                <h3>Sourcing</h3>
+                <p>Sourced components/items requiring validation.</p>
+              </div>
+            </div><span id="sourcingCount" class="area-count"></span>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Total TC</th>
+                    <th>Executed</th>
+                    <th>Pass</th>
+                    <th>Fail</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="sourcingTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="area-section">
+          <div class="area-title">
+            <div><span class="area-icon field">⚠</span>
+              <div>
+                <h3>Field Issues</h3>
+                <p>Field issues with corrective-action validation.</p>
+              </div>
+            </div><span id="fieldIssuesCount" class="area-count"></span>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Total TC</th>
+                    <th>Executed</th>
+                    <th>Pass</th>
+                    <th>Fail</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="fieldIssuesTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="area-section">
+          <div class="area-title">
+            <div><span class="area-icon quality">✓</span>
+              <div>
+                <h3>Quality</h3>
+                <p>Quality verification and inspection activities.</p>
+              </div>
+            </div><span id="qualityCount" class="area-count"></span>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Total TC</th>
+                    <th>Executed</th>
+                    <th>Pass</th>
+                    <th>Fail</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="qualityTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="area-section">
+          <div class="area-title">
+            <div><span class="area-icon rnd">💡</span>
+              <div>
+                <h3>R&amp;D</h3>
+                <p>Research and development validation activities.</p>
+              </div>
+            </div><span id="rndCount" class="area-count"></span>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Total TC</th>
+                    <th>Executed</th>
+                    <th>Pass</th>
+                    <th>Fail</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="rndTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="area-section">
+          <div class="area-title">
+            <div><span class="area-icon nit">⚙</span>
+              <div>
+                <h3>NIT</h3>
+                <p>New Item Testing validation activities.</p>
+              </div>
+            </div><span id="nitCount" class="area-count"></span>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Total TC</th>
+                    <th>Executed</th>
+                    <th>Pass</th>
+                    <th>Fail</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="nitTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-column">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Overall Test Status</h3>
+                <p>Combined status across all validation areas.</p>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="portfolioStatusChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="productsView" class="view">
+        <div class="page-intro">
+          <div>
+            <h2>Products</h2>
+            <p>Product validation status and test-case execution. Product names remain out of the sidebar to keep it
+              clean as the portfolio grows.</p>
+          </div>
+          <button type="button" class="back-link" id="productsBackToOverview">Back to Overview →</button>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Product Validation</h3>
+              <p>Click a product to open its detailed validation page.</p>
+            </div>
+            <span class="result-count" id="productsPageCount"></span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Total TC</th>
+                  <th>Executed</th>
+                  <th>Pass</th>
+                  <th>Fail</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="productsPageTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="productView" class="view">
+        <div class="product-navigation">
+          <button type="button" class="back-link" id="backToParent">← Back</button>
+          <button type="button" class="back-link" id="backToOverview">Back to Overview →</button>
+        </div>
+        <div class="product-hero">
+          <div><span class="eyebrow">VALIDATION ITEM</span>
+            <p id="productDescription"></p>
+          </div><span class="product-status" id="productStatus"></span>
+        </div>
+        <div class="kpi-grid" id="productKpis"></div>
+        <div class="progress-panel panel">
+          <div class="progress-row">
+            <div>
+              <h3>Progress</h3>
+              <p>Shows the number of test cases completed out of the total planned.</p>
+            </div><strong id="executionPercent"></strong>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="executionBar"></div>
+          </div>
+        </div>
+        <div class="two-column">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Failure Analysis</h3>
+                <p>Failed test cases grouped by category.</p>
+              </div>
+            </div>
+            <div id="failureList" class="failure-list"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>Test Cases</h3>
+              <p>Search and filter the selected validation repository.</p>
+            </div><span class="result-count" id="resultCount"></span>
+          </div>
+          <div class="filters"><input id="testSearch" type="search"
+              placeholder="Search TC ID, scenario, module..."><select id="categoryFilter">
+              <option value="">All Categories</option>
+            </select><select id="statusFilter">
+              <option value="">All Statuses</option>
+            </select><select id="priorityFilter">
+              <option value="">All Priorities</option>
+            </select></div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>TC ID</th>
+                  <th>Category</th>
+                  <th>Scenario</th>
+                  <th>Module</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Tester</th>
+                </tr>
+              </thead>
+              <tbody id="testCaseTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sourcingView" class="view module-view"></section>
+      <section id="fieldIssuesView" class="view module-view"></section>
+      <section id="qualityView" class="view module-view"></section>
+      <section id="rndView" class="view module-view"></section>
+      <section id="nitView" class="view module-view"></section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+
+</html>
