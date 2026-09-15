@@ -42,12 +42,19 @@
 
     <main class="main">
       <header class="topbar">
-        <div>
+        <div class="topbar-title-area">
+          <h1 class="main-dashboard-title">Verification & Validation Product Engineer DashBoard</h1>
+        </div>
+        <div class="topbar-logo-area">
+          <img src="assets/eruvaka_logo_transparent.png" alt="Eruvaka">
+          <button type="button" class="refresh-btn" id="resetBtn">Reset</button>
+        </div>
+
+        <!-- Hidden elements to preserve JS logic without duplicating title -->
+        <div style="display: none;">
           <div class="breadcrumb" id="breadcrumb">Dashboard / Overview</div>
           <h1 id="pageTitle">V&amp;V Overview</h1>
         </div>
-        <div class="topbar-actions"><span class="header-logo"><img src="assets/eruvaka_logo.jpg"
-              alt="Eruvaka"></span><button type="button" class="refresh-btn" id="resetBtn">Reset</button></div>
       </header>
 
       <section id="overviewView" class="view active">

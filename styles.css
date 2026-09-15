@@ -162,7 +162,29 @@ select {
   align-items: center;
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, .48);
-  backdrop-filter: blur(8px)
+  backdrop-filter: blur(8px);
+  gap: 24px;
+}
+
+.topbar-logo-area {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--border);
+  padding-left: 24px;
+  gap: 16px;
+}
+
+.topbar-logo-area img {
+  height: 40px;
+  object-fit: contain;
+}
+
+.main-dashboard-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: 0.5px;
 }
 
 .breadcrumb {
