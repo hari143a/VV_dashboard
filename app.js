@@ -184,7 +184,8 @@ function renderCases(cases) {
 }
 function showView(v) {
   document.querySelectorAll(".view").forEach(x => x.classList.remove("active"));
-  $(v + "View").classList.add("active");
+  const el = $(v + "View");
+  if (el) el.classList.add("active");
   document.querySelectorAll(".nav-item").forEach(x => x.classList.toggle("active", x.dataset.view === v));
 }
 function renderModuleLanding(areaKey, title) {
