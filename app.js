@@ -110,7 +110,10 @@ function renderProductsPage() {
 }
 
 function renderAreaTable(id, items, countId, label, clickable) {
-  $(countId).textContent = `${items.length} item${items.length !== 1 ? "s" : ""}`;
+  let t = 0, e = 0, p = 0, f = 0;
+  items.forEach(x => { const m = metrics(x); t += m.tests; e += m.executed; p += m.pass; f += m.fail; });
+  
+  $(countId).innerHTML = `<span style="font-size:12px; margin-right:20px; color:#6b7280; font-weight:normal;">Total TC: <strong style="color:#111827">${t}</strong> &nbsp;|&nbsp; Executed: <strong style="color:#111827">${e}</strong> &nbsp;|&nbsp; Pass: <strong style="color:var(--success)">${p}</strong> &nbsp;|&nbsp; Fail: <strong style="color:var(--danger)">${f}</strong></span>${items.length} item${items.length !== 1 ? "s" : ""}`;
   $(id).innerHTML = items.map((x, i) => {
     const m = metrics(x);
     const detailId = label === "Products" ? x.id : `${label}-${i}`;
