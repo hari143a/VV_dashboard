@@ -110,10 +110,16 @@ function renderProductsPage() {
 }
 
 function renderAreaTable(id, items, countId, label, clickable) {
-  let t = 0, e = 0, p = 0, f = 0;
-  items.forEach(x => { const m = metrics(x); t += m.tests; e += m.executed; p += m.pass; f += m.fail; });
+  let total = items.length, open = 0, inProgress = 0, complete = 0, rejects = 0;
+  items.forEach(x => {
+    let s = (x.status || "").toLowerCase();
+    if (s.includes("open")) open++;
+    else if (s.includes("progress") || s.includes("in validation")) inProgress++;
+    else if (s.includes("complete")) complete++;
+    else if (s.includes("reject")) rejects++;
+  });
   
-  $(countId).innerHTML = `<span style="font-size:12px; margin-right:20px; color:#6b7280; font-weight:normal;">Total TC: <strong style="color:#111827">${t}</strong> &nbsp;|&nbsp; Executed: <strong style="color:#111827">${e}</strong> &nbsp;|&nbsp; Pass: <strong style="color:var(--success)">${p}</strong> &nbsp;|&nbsp; Fail: <strong style="color:var(--danger)">${f}</strong></span>${items.length} item${items.length !== 1 ? "s" : ""}`;
+  $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Complete: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejects: <strong style="color:var(--danger)">${rejects}</strong></span>`;
   $(id).innerHTML = items.map((x, i) => {
     const m = metrics(x);
     const detailId = label === "Products" ? x.id : `${label}-${i}`;
