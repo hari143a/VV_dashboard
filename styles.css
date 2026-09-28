@@ -1548,3 +1548,99 @@ body {
 .product-navigation .back-link {
   margin-bottom: 0;
 }
+
+/* Part Details Styles */
+.part-details-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+.part-details-selector select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #1a2b45;
+  font-weight: 500;
+  width: 250px;
+}
+
+.part-info-bar {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.part-info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.part-info-label {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.part-info-value {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.part-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media(max-width:1100px) {
+  .part-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media(max-width:700px) {
+  .part-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.part-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.part-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.part-card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #10243f;
+}
+
+.badge-complete { background: #e3f6ea; color: #16834a; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; }
+.badge-pending { background: #fee2e2; color: #dc2626; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; }
+.badge-not-started { background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; }
+.variance-badge { background: #e3f6ea; color: #16834a; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; margin-bottom: 12px; }
+
+.part-card-remarks { font-size: 11px; color: var(--muted); margin-top: auto; padding-top: 12px; }

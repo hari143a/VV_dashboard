@@ -118,7 +118,7 @@ function renderAreaTable(id, items, countId, label, clickable) {
     else if (s.includes("complete")) complete++;
     else if (s.includes("reject")) rejects++;
   });
-  
+
   $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Complete: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejects: <strong style="color:var(--danger)">${rejects}</strong></span>`;
   $(id).innerHTML = items.map((x, i) => {
     const m = metrics(x);
@@ -209,7 +209,7 @@ function renderModuleLanding(areaKey, title) {
 }
 document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => {
   const v = btn.dataset.view; showView(v);
-  const title = v === "overview" ? "V&V Overview" : v === "products" ? "Products" : v === "fieldIssues" ? "Field Issues" : v === "rnd" ? "R&D" : v === "nit" ? "NIT" : v.charAt(0).toUpperCase() + v.slice(1);
+  const title = v === "overview" ? "V&V Overview" : v === "products" ? "Products" : v === "fieldIssues" ? "Field Issues" : v === "rnd" ? "R&D" : v === "nit" ? "NIT" : v === "partQualification" ? "Part Qualification" : v.charAt(0).toUpperCase() + v.slice(1);
   $("breadcrumb").textContent = `Dashboard / ${title}`; $("pageTitle").textContent = title;
   if (v === "products") renderProductsPage();
   if (v === "sourcing") renderModuleLanding("sourcing", "Sourcing");
@@ -217,7 +217,563 @@ document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => {
   if (v === "quality") renderModuleLanding("quality", "Quality");
   if (v === "rnd") renderModuleLanding("rnd", "R&D");
   if (v === "nit") renderModuleLanding("nit", "NIT");
+  if (v === "partQualification") renderPartQualificationPage();
 });
+
+const projectsConfig = {
+  fishFeeder: { id: "fishFeeder", name: "Fish Feeder 2026", file: "excel files/Part_Qualification_FF_Tracker_2026.xlsx", sheet: "FF_2026" },
+  nurseryFeeder: { id: "nurseryFeeder", name: "Nursery Feeder 2026", file: "excel files/Part_Qualification_NF_Tracker_2026.xlsx", sheet: "NF_2026" }
+};
+
+let loadedProjectsData = {};
+let currentSelectedProject = null;
+let autoRefreshTimer = null;
+let isFirstLoad = true;
+
+async function loadExcelProject(projectKey, forceRefresh = false) {
+  const config = projectsConfig[projectKey];
+  try {
+    // If we have cached data and not forcing refresh, don't fetch again
+    if (loadedProjectsData[projectKey] && !forceRefresh) {
+      return; 
+    }
+
+    console.time(`${config.name} Fetch`);
+    // Use conditional requests to avoid downloading if unchanged
+    const fetchOptions = {
+      method: 'GET',
+      headers: {}
+    };
+
+    // If we have a stored last-modified for this project, add it
+    if (loadedProjectsData[projectKey] && loadedProjectsData[projectKey].lastModified) {
+      fetchOptions.headers['If-Modified-Since'] = loadedProjectsData[projectKey].lastModified;
+    }
+
+    // Use cache-busting to bypass browser cache ONLY on forceRefresh
+    const url = forceRefresh ? `${config.file}?t=${Date.now()}` : config.file;
+    const res = await fetch(url, fetchOptions);
+
+    if (res.status === 304) {
+      // Not modified, keep existing cache
+      console.timeEnd(`${config.name} Fetch`);
+      return;
+    }
+
+    if (!res.ok) throw new Error("Network response was not ok");
+    
+    const lastModified = res.headers.get('Last-Modified');
+    const arrayBuffer = await res.arrayBuffer();
+    console.timeEnd(`${config.name} Fetch`);
+
+    console.time(`${config.name} XLSX Parse`);
+    // Dense mode improves memory and parsing speed
+    const workbook = XLSX.read(arrayBuffer, { type: 'array', dense: true });
+    const sheet = workbook.Sheets[config.sheet];
+    if (!sheet) throw new Error(`Sheet ${config.sheet} not found`);
+    console.timeEnd(`${config.name} XLSX Parse`);
+    
+    console.time(`${config.name} Data Processing`);
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+    const parsedData = parseTrackerSheet(rows, config);
+    parsedData.lastModified = lastModified || new Date().toUTCString();
+    
+    loadedProjectsData[projectKey] = parsedData;
+    console.timeEnd(`${config.name} Data Processing`);
+    
+    // Print total for user observation
+    console.log(`${config.name} loaded successfully.`);
+  } catch (e) {
+    console.error("Error loading Excel for", config.name, e);
+    // Only set fallback if we have no existing cache
+    if (!loadedProjectsData[projectKey]) {
+      loadedProjectsData[projectKey] = { config, parts: [], summary: getEmptySummary(), error: true };
+    }
+  }
+}
+
+function getEmptySummary() {
+  return [
+    { stage: "Design Readiness", completed: 0, total: 0 },
+    { stage: "Part Qualification", completed: 0, total: 0 },
+    { stage: "Sourcing Readiness", completed: 0, total: 0 },
+    { stage: "Supplier Qualification", completed: 0, total: 0 },
+    { stage: "Sample / Lot Procurement", completed: 0, total: 0 },
+    { stage: "Factory Handover", completed: 0, total: 0 }
+  ];
+}
+
+function parseTrackerSheet(rows, config) {
+  if (rows.length < 2) return { config, parts: [], summary: getEmptySummary() };
+  const headers = rows[1].map(h => String(h).trim().toLowerCase());
+
+  // Find column indices robustly
+  const colIndex = (searchStrs) => {
+    for (let str of searchStrs) {
+      const idx = headers.findIndex(h => h.includes(str.toLowerCase()));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const map = {
+    partNum: colIndex(["part number"]),
+    partDesc: colIndex(["part discription", "part description", "description"]),
+    partType: colIndex(["part type"]),
+    peKickOff: colIndex(["pe kick-off", "kick off"]),
+    bomRev: colIndex(["bom rev"]),
+    rev: colIndex(["rev. no", "rev no"]),
+    qty: colIndex(["qty", "quantity"]),
+
+    // Design
+    designPlan: colIndex(["design readiness planned"]),
+    designAct: colIndex(["design readiness actual"]),
+    designMat: colIndex(["maturity %", "maturity"]),
+    designDoc: colIndex(["doc. rec'd", "doc rec"]),
+
+    // PQ
+    pqPlan: colIndex(["pe verif. planned"]),
+    pqAct: colIndex(["pe verif. actual"]),
+    pqReady: colIndex(["ready for pq"]),
+    pqDraw: colIndex(["drawing / spec to scm"]),
+    pqTarget: colIndex(["sourcing target date"]),
+    pqRem: colIndex(["comments/ remarks", "remarks"]), // First remarks after PQ
+
+    // Sourcing
+    srcDraw: colIndex(["drawing / spec to vendors"]),
+    srcIdPlan: colIndex(["vendors identification planned"]),
+    srcIdAct: colIndex(["vendors identification actual"]),
+    srcRfq: colIndex(["rfq released"]),
+    srcTech: colIndex(["technical queries closure"]),
+    srcQuote: colIndex(["quotations received"]),
+    srcFinal: colIndex(["vendor finalization", "vendor final"]),
+    srcSize: colIndex(["sample size", "sample  size"]),
+    srcLeadType: colIndex(["lead time type"]),
+    srcLeadConf: colIndex(["lead time confirmation actual"]),
+    srcPo: colIndex(["release of po", "po release"]),
+    srcRem: colIndex(["remarks/ comments"]),
+
+    // Supplier Qual
+    sqVisit: colIndex(["vendor visit required"]),
+    sqPpap: colIndex(["ppap/fai", "ppap"]),
+    sqSamp: colIndex(["sample approval"]),
+    sqQual: colIndex(["quality & mf agreements", "quality agreements"]),
+    sqRem: headers.indexOf("remarks/ comments", colIndex(["quality & mf agreements"]) + 1),
+
+    // Sample
+    sampDisp: colIndex(["samplet dispatch", "sample dispatch"]),
+    sampRec: colIndex(["sample receipt", "sample  receipt"]),
+    sampQa: colIndex(["qa (cft)", "qa "]),
+    sampDes: colIndex(["distpacth sample to design", "dispatch sample"]),
+    sampRem: headers.indexOf("remarks/ comments", colIndex(["distpacth sample to design"]) + 1),
+
+    // Factory
+    facFit: colIndex(["check form & fit"]),
+    facTest: colIndex(["testing"]),
+    facIss: colIndex(["open issues"]),
+    facDes: colIndex(["design changes"]),
+    facBom: colIndex(["bom revision updates"]),
+    facReq: colIndex(["part qualification required"]),
+    facApp: colIndex(["part approval", " part approval"]),
+    facRem: headers.indexOf("remarks/ comments", colIndex(["part approval"]) + 1)
+  };
+
+  const parts = [];
+  let summary = getEmptySummary();
+
+  const isValidVal = (val) => val && String(val).trim() !== "" && String(val).trim() !== "-" && String(val).trim().toLowerCase() !== "tba";
+
+  for (let i = 2; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+
+    const partNum = row[map.partNum];
+    const partDesc = row[map.partDesc];
+    // Valid part if it has a description or number
+    if (!isValidVal(partNum) && !isValidVal(partDesc)) continue;
+
+    const safeGet = (idx) => (idx !== -1 && row[idx] !== undefined) ? String(row[idx]) : "-";
+
+    const isDesignDone = isValidVal(row[map.designAct]);
+    const isPqDone = isValidVal(row[map.pqAct]) || String(row[map.pqReady]).toLowerCase() === 'yes';
+    const isSrcDone = isValidVal(row[map.srcFinal]) || isValidVal(row[map.srcPo]);
+    const isSqDone = isValidVal(row[map.sqVisit]) || isValidVal(row[map.sqPpap]) || isValidVal(row[map.sqSamp]) || isValidVal(row[map.sqQual]);
+    const isSampDone = isValidVal(row[map.sampDisp]) || isValidVal(row[map.sampRec]) || isValidVal(row[map.sampQa]);
+    const isFacDone = isValidVal(row[map.facFit]) || isValidVal(row[map.facTest]) || isValidVal(row[map.facApp]);
+
+    const partObj = {
+      id: i,
+      partNumber: safeGet(map.partNum),
+      partDesc: safeGet(map.partDesc),
+      partType: safeGet(map.partType),
+      peKickOff: formatExcelDate(row[map.peKickOff]),
+      bomRev: safeGet(map.bomRev),
+      rev: safeGet(map.rev),
+      qty: safeGet(map.qty),
+
+      designDone: isDesignDone,
+      pqDone: isPqDone,
+      srcDone: isSrcDone,
+      sqDone: isSqDone,
+      sampDone: isSampDone,
+      facDone: isFacDone,
+
+      cards: [
+        {
+          title: "01. Design Readiness", status: isDesignDone ? "Complete" : "Pending", statusClass: isDesignDone ? "badge-complete" : "badge-pending",
+          fields: [{ l: "Planned:", v: formatExcelDate(row[map.designPlan]) }, { l: "Actual:", v: formatExcelDate(row[map.designAct]) }, { l: "Maturity %:", v: safeGet(map.designMat) }, { l: "Doc Rec'd:", v: safeGet(map.designDoc) }]
+        },
+        {
+          title: "02. Part Qual. Readiness", status: isPqDone ? "Complete" : "Pending", statusClass: isPqDone ? "badge-complete" : "badge-pending",
+          fields: [{ l: "PE Verif. Planned:", v: formatExcelDate(row[map.pqPlan]) }, { l: "PE Verif. Actual:", v: formatExcelDate(row[map.pqAct]) }, { l: "Ready for PQ:", v: safeGet(map.pqReady) }, { l: "Drawing to SCM:", v: formatExcelDate(row[map.pqDraw]) }, { l: "Target Date:", v: formatExcelDate(row[map.pqTarget]) }],
+          remarks: safeGet(map.pqRem)
+        },
+        {
+          title: "03. Sourcing Readiness", status: isSrcDone ? "Complete" : "Pending", statusClass: isSrcDone ? "badge-complete" : "badge-pending",
+          fields: [{ l: "Drawing to Vendors:", v: formatExcelDate(row[map.srcDraw]) }, { l: "Vendor ID Planned:", v: formatExcelDate(row[map.srcIdPlan]) }, { l: "Vendor ID Actual:", v: formatExcelDate(row[map.srcIdAct]) }, { l: "RFQ Released:", v: formatExcelDate(row[map.srcRfq]) }, { l: "Tech Queries Closure:", v: formatExcelDate(row[map.srcTech]) }, { l: "Quotes Received:", v: formatExcelDate(row[map.srcQuote]) }, { l: "Vendor Finalization:", v: formatExcelDate(row[map.srcFinal]) }, { l: "Sample Size:", v: safeGet(map.srcSize) }, { l: "Lead Time Type:", v: safeGet(map.srcLeadType) }, { l: "Lead Time Conf.:", v: formatExcelDate(row[map.srcLeadConf]) }, { l: "PO Release:", v: formatExcelDate(row[map.srcPo]) }],
+          remarks: safeGet(map.srcRem)
+        },
+        {
+          title: "04. Supplier Qualification", status: isSqDone ? "Complete" : "Pending", statusClass: isSqDone ? "badge-complete" : "badge-pending",
+          fields: [{ l: "Vendor Visit Req:", v: safeGet(map.sqVisit) }, { l: "PPAP/FAI:", v: safeGet(map.sqPpap) }, { l: "Sample Approval:", v: formatExcelDate(row[map.sqSamp]) }, { l: "Quality/MF Agreements:", v: safeGet(map.sqQual) }],
+          remarks: (map.sqRem !== -1) ? safeGet(map.sqRem) : "-"
+        },
+        {
+          title: "05. Sample / Lot Procurement", status: isSampDone ? "Complete" : "Pending", statusClass: isSampDone ? "badge-complete" : "badge-pending",
+          fields: [{ l: "Sample Dispatch:", v: formatExcelDate(row[map.sampDisp]) }, { l: "Sample Receipt:", v: formatExcelDate(row[map.sampRec]) }, { l: "QA (CFT):", v: safeGet(map.sampQa) }, { l: "Dispatch to Design:", v: formatExcelDate(row[map.sampDes]) }],
+          remarks: (map.sampRem !== -1) ? safeGet(map.sampRem) : "-"
+        },
+        {
+          title: "06. Factory Handover", status: isFacDone ? "Complete" : "Pending", statusClass: isFacDone ? "badge-complete" : "badge-pending",
+          fields: [{ l: "Check Form & Fit:", v: safeGet(map.facFit) }, { l: "Testing:", v: safeGet(map.facTest) }, { l: "Open Issues:", v: safeGet(map.facIss) }, { l: "Design Changes:", v: safeGet(map.facDes) }, { l: "BOM Rev Updates:", v: safeGet(map.facBom) }, { l: "Part Qual Req:", v: safeGet(map.facReq) }, { l: "Part Approval:", v: safeGet(map.facApp) }],
+          remarks: (map.facRem !== -1) ? safeGet(map.facRem) : "-"
+        }
+      ]
+    };
+
+    // Determine current stage & readiness
+    let curStage = "Not Started";
+    let readi = "0%";
+    if (isFacDone) { curStage = "Factory Handover"; readi = "100%"; }
+    else if (isSampDone) { curStage = "Sample / Lot Procurement"; readi = "83%"; }
+    else if (isSqDone) { curStage = "Supplier Qualification"; readi = "66%"; }
+    else if (isSrcDone) { curStage = "Sourcing Readiness"; readi = "50%"; }
+    else if (isPqDone) { curStage = "Part Qualification"; readi = "33%"; }
+    else if (isDesignDone) { curStage = "Design Readiness"; readi = "16%"; }
+
+    partObj.currentStage = curStage;
+    partObj.readiness = readi;
+
+    parts.push(partObj);
+
+    summary[0].total++; summary[1].total++; summary[2].total++;
+    summary[3].total++; summary[4].total++; summary[5].total++;
+    if (isDesignDone) summary[0].completed++;
+    if (isPqDone) summary[1].completed++;
+    if (isSrcDone) summary[2].completed++;
+    if (isSqDone) summary[3].completed++;
+    if (isSampDone) summary[4].completed++;
+    if (isFacDone) summary[5].completed++;
+  }
+
+  // Pre-compute O(1) lookup map
+  const partMap = {};
+  for(let i=0; i<parts.length; i++) {
+    partMap[parts[i].id.toString()] = parts[i];
+  }
+
+  return { config, parts, partMap, summary };
+}
+
+function formatExcelDate(val) {
+  if (!val || String(val).trim() === "" || String(val).trim() === "-") return "-";
+  if (!isNaN(val) && typeof val === 'number') {
+    const d = new Date((val - (25567 + 2)) * 86400 * 1000); // Excel date to JS date
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+  }
+  return String(val);
+}
+
+async function initPartQualification(forceRefresh = false) {
+  if (isFirstLoad) {
+    isFirstLoad = false;
+  }
+
+  // Independent loading and updating
+  ['fishFeeder', 'nurseryFeeder'].forEach(key => {
+    loadExcelProject(key, forceRefresh).then(() => {
+      refreshActivePQView();
+    });
+  });
+
+  // Setup auto-refresh every 60 seconds (non-blocking)
+  if (!autoRefreshTimer) {
+    autoRefreshTimer = setInterval(() => {
+      ['fishFeeder', 'nurseryFeeder'].forEach(key => {
+        loadExcelProject(key, true).then(() => {
+          refreshActivePQView();
+        });
+      });
+    }, 60000);
+  }
+}
+
+function refreshActivePQView() {
+  const v = $("partQualificationView");
+  if (!v || !v.classList.contains("active")) return;
+  
+  if (currentSelectedProject) {
+    renderPQDetailView(currentSelectedProject);
+    const partSelect = $("partSelect");
+    if (partSelect && partSelect.value) renderPartDetails(partSelect.value);
+  } else {
+    renderPQMainView();
+  }
+}
+
+function renderPQMainView() {
+  currentSelectedProject = null;
+  const v = $("partQualificationView");
+  if (!v.classList.contains("active")) return;
+
+  let html = `
+        <div class="page-intro" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h2>Part Qualification</h2>
+                <p>Select a project to view readiness stage progress.</p>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <select id="topProjectDropdown" onchange="handleTopDropdown(this.value)" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#fff; font-weight:500;">
+                    <option value="">Select Project</option>
+                    <option value="fishFeeder">Fish Feeder 2026</option>
+                    <option value="nurseryFeeder">Nursery Feeder 2026</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="two-column" style="margin-top:20px;">
+    `;
+
+  ['fishFeeder', 'nurseryFeeder'].forEach(key => {
+    const config = projectsConfig[key];
+    const pd = loadedProjectsData[key];
+    
+    if (!pd) {
+      // Loading state
+      html += `
+            <div class="panel project-card">
+                <div class="panel-header">
+                    <div>
+                        <h3 style="color:#1769e0; font-size:18px;">${config.name}</h3>
+                        <p style="margin-top:5px;">Loading data...</p>
+                    </div>
+                </div>
+                <div style="padding:20px 24px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px;">
+                        <span style="color:#6b7280;">Total Parts</span>
+                        <strong style="color:#111827; font-size:16px;">Loading...</strong>
+                    </div>
+                    <div class="progress-track" style="height:6px; margin-bottom:20px; background:#e5e7eb;"></div>
+                </div>
+            </div>
+      `;
+      return;
+    }
+    
+    if (pd.error) {
+       // Error state
+       html += `
+            <div class="panel project-card">
+                <div class="panel-header">
+                    <div>
+                        <h3 style="color:#1769e0; font-size:18px;">${config.name}</h3>
+                        <p style="margin-top:5px; color:var(--danger);">Error loading data</p>
+                    </div>
+                </div>
+                <div style="padding:20px 24px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px;">
+                        <span style="color:#6b7280;">Status</span>
+                        <strong style="color:var(--danger); font-size:16px;">Failed</strong>
+                    </div>
+                </div>
+            </div>
+       `;
+       return;
+    }
+
+    const total = pd.parts.length;
+    let ovrPct = 0;
+    if (total > 0) {
+      let totalStages = total * 6;
+      let compStages = pd.summary.reduce((a, b) => a + b.completed, 0);
+      ovrPct = Math.round((compStages / totalStages) * 100);
+    }
+
+    html += `
+            <div class="panel project-card" style="cursor:pointer; transition:transform 0.2s;" onclick="openProjectDetail('${key}')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="panel-header">
+                    <div>
+                        <h3 style="color:#1769e0; font-size:18px;">${config.name}</h3>
+                        <p style="margin-top:5px;">Click to view detailed part qualification data</p>
+                    </div>
+                </div>
+                <div style="padding:20px 24px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px;">
+                        <span style="color:#6b7280;">Total Parts</span>
+                        <strong style="color:#111827; font-size:16px;">${total}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
+                        <span style="color:#6b7280;">Overall Progress</span>
+                        <strong style="color:#1769e0; font-size:16px;">${ovrPct}%</strong>
+                    </div>
+                    <div class="progress-track" style="height:6px; margin-bottom:20px;">
+                        <div class="progress-fill" style="width:${ovrPct}%;"></div>
+                    </div>
+                    <div style="text-align:right; color:#1769e0; font-weight:500; font-size:13px;">View Details →</div>
+                </div>
+            </div>
+        `;
+  });
+
+  html += `</div>`;
+
+  // Add small updated text
+  html += `<div style="text-align:right; margin-top:20px; font-size:11px; color:#9ca3af;">Data updates automatically every 60s in the background</div>`;
+
+  v.innerHTML = html;
+
+  const backBtn = v.querySelector(".btn-back-overview");
+  if (backBtn) {
+    backBtn.onclick = () => { showView("overview"); $("breadcrumb").textContent = "Dashboard / Overview"; $("pageTitle").textContent = "V&V Overview"; };
+  }
+}
+
+window.handleTopDropdown = function (val) {
+  if (val) {
+    openProjectDetail(val);
+  } else {
+    renderPQMainView();
+  }
+};
+
+window.openProjectDetail = function (projectKey) {
+  currentSelectedProject = projectKey;
+  renderPQDetailView(projectKey);
+};
+
+function renderPQDetailView(projectKey) {
+  const v = $("partQualificationView");
+  const pd = loadedProjectsData[projectKey];
+  if (!pd) return;
+
+  let html = `
+        <div class="page-intro" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h2>${pd.config.name} — Part Qualification</h2>
+                <p>Readiness Stage Progress from ${pd.config.sheet}</p>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <select id="topProjectDropdownDetail" onchange="handleTopDropdown(this.value)" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#fff; font-weight:500;">
+                    <option value="">Select Project</option>
+                    <option value="fishFeeder" ${projectKey === 'fishFeeder' ? 'selected' : ''}>Fish Feeder 2026</option>
+                    <option value="nurseryFeeder" ${projectKey === 'nurseryFeeder' ? 'selected' : ''}>Nursery Feeder 2026</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="panel" style="margin-bottom:24px;">
+            <div class="panel-header"><div><h3>READINESS STAGE PROGRESS</h3></div></div>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Readiness Stage</th><th>Completed</th><th>Total</th><th>Progress</th></tr></thead>
+                    <tbody>
+                        ${pd.summary.map(row => {
+    const pct = row.total ? Math.round((row.completed / row.total) * 100) : 0;
+    return `<tr><td><strong>${row.stage}</strong></td><td>${row.completed}</td><td>${row.total}</td><td><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><span class="progress-text">${pct}%</span></td></tr>`;
+  }).join("")}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="part-details-selector">
+            <strong style="color: #10243f;">Part Details:</strong>
+            <select id="partSelect" onchange="renderPartDetails(this.value)">
+                <option value="">Select a part...</option>
+                ${pd.parts.map(p => {
+    const disp = p.partDesc && p.partDesc !== '-' ? p.partDesc : p.partNumber;
+    return `<option value="${p.id}">${disp}</option>`;
+  }).join("")}
+            </select>
+        </div>
+        <div id="partDetailsContainer" style="padding: 40px; text-align: center; color: #6b7280; background: #fff; border-radius: 12px; border: 1px solid var(--border);">
+            Please select a part from the dropdown to view its details.
+        </div>
+    `;
+
+  v.innerHTML = html;
+}
+
+window.renderPartDetails = function (id) {
+  const container = $("partDetailsContainer");
+  if (!id || !currentSelectedProject) {
+    container.innerHTML = `Please select a part from the dropdown to view its details.`;
+    container.style.padding = "40px";
+    container.style.textAlign = "center";
+    container.style.background = "#fff";
+    container.style.border = "1px solid var(--border)";
+    return;
+  }
+
+  const pd = loadedProjectsData[currentSelectedProject];
+  const data = pd.partMap[id.toString()];
+  if (!data) return;
+
+  container.style.padding = "0";
+  container.style.textAlign = "left";
+  container.style.background = "transparent";
+  container.style.border = "none";
+
+  container.innerHTML = `
+        <div class="part-info-bar">
+            <div class="part-info-item"><span class="part-info-label">PART NUMBER</span><span class="part-info-value">${data.partNumber}</span></div>
+            <div class="part-info-item"><span class="part-info-label">PART TYPE</span><span class="part-info-value">${data.partType}</span></div>
+            <div class="part-info-item"><span class="part-info-label">PE KICK-OFF</span><span class="part-info-value">${data.peKickOff}</span></div>
+            <div class="part-info-item"><span class="part-info-label">BOM REV</span><span class="part-info-value">${data.bomRev}</span></div>
+            <div class="part-info-item"><span class="part-info-label">REV</span><span class="part-info-value">${data.rev}</span></div>
+            <div class="part-info-item"><span class="part-info-label">QTY</span><span class="part-info-value">${data.qty}</span></div>
+            <div class="part-info-item"><span class="part-info-label">CURRENT STAGE</span><span class="part-info-value" style="color: #1769e0;">${data.currentStage}</span></div>
+            <div class="part-info-item"><span class="part-info-label">READINESS</span><span class="part-info-value" style="color: #1769e0;">${data.readiness}</span></div>
+        </div>
+        <div class="part-cards-grid">
+            ${data.cards.map(c => `
+                <div class="part-card">
+                    <div class="part-card-header">
+                        <span class="part-card-title">${c.title}</span>
+                        <span class="${c.statusClass}">${c.status}</span>
+                    </div>
+                    ${c.variance && c.variance !== '-' ? `<div class="variance-badge">${c.variance}</div>` : ''}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        ${c.fields.map(f => `<div style="font-size: 11px;"><span style="color:#71839d">${f.l}</span> <strong style="color:#10243f">${f.v}</strong></div>`).join("")}
+                    </div>
+                    ${c.remarks && c.remarks !== '-' ? `<div class="part-card-remarks">Remarks: <strong>${c.remarks}</strong></div>` : ''}
+                </div>
+            `).join("")}
+        </div>
+    `;
+};
+
+function renderPartQualificationPage() {
+  // Always render immediately using whatever is in cache
+  if (currentSelectedProject) {
+    renderPQDetailView(currentSelectedProject);
+  } else {
+    renderPQMainView();
+  }
+  // Then initiate a background load/refresh if necessary
+  initPartQualification(false);
+}
+
 $("backToOverview").onclick = () => { selectedProduct = null; showView("overview"); $("breadcrumb").textContent = "Dashboard / Overview"; $("pageTitle").textContent = "V&V Overview" };
 $("productsBackToOverview").onclick = () => { showView("overview"); $("breadcrumb").textContent = "Dashboard / Overview"; $("pageTitle").textContent = "V&V Overview" };
 $("resetBtn").onclick = () => location.reload();
