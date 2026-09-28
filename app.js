@@ -276,6 +276,19 @@ async function loadExcelProject(projectKey, forceRefresh = false) {
     console.time(`${config.name} Data Processing`);
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
     const parsedData = parseTrackerSheet(rows, config);
+    
+    // Parse maturity data from all sheets
+    parsedData.maturityTable = parseMaturityTable(workbook);
+    
+    // Extract exact readiness summary from sheets instead of relying solely on JS calculation
+    const exactSummary = parseReadinessTable(workbook);
+    if (exactSummary && exactSummary.length > 0) {
+        parsedData.summary = exactSummary;
+    }
+    
+    // Extract exact overall stats (Tracked Parts, Overall Progress)
+    parsedData.stats = parseOverallStats(workbook);
+    
     parsedData.lastModified = lastModified || new Date().toUTCString();
     
     loadedProjectsData[projectKey] = parsedData;
@@ -485,6 +498,203 @@ function parseTrackerSheet(rows, config) {
   return { config, parts, partMap, summary };
 }
 
+function parseMaturityTable(workbook) {
+    const maturityTable = [];
+    let found = false;
+
+    console.log(`[Maturity Parser] Searching workbook...`);
+    console.log(`[Maturity Parser] Sheets: ${workbook.SheetNames.join(', ')}`);
+
+    for (let sheetName of workbook.SheetNames) {
+        if (found) break;
+        console.log(`[Maturity Parser] Checking sheet: ${sheetName}`);
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+        const matTitleIdx = rows.findIndex(r => r && r.some(c => {
+            const txt = String(c).toUpperCase();
+            return txt.includes("MATURITY PROGRESS") || txt.includes("PARTS BY FUNCTION");
+        }));
+
+        if (matTitleIdx !== -1) {
+            console.log(`[Maturity Parser] Candidate maturity section found at row ${matTitleIdx} in sheet '${sheetName}'`);
+            found = true;
+            let headerIdx = -1;
+            for (let i = matTitleIdx; i < Math.min(matTitleIdx + 15, rows.length); i++) {
+                if (rows[i] && rows[i].some(c => {
+                    const t = String(c).trim().toUpperCase();
+                    return t === "GROUP" || t === "CATEGORY";
+                })) {
+                    headerIdx = i;
+                    break;
+                }
+            }
+
+            if (headerIdx !== -1) {
+                console.log(`[Maturity Parser] Header row: ${headerIdx}`);
+                const hdrs = rows[headerIdx].map(h => String(h).trim().toUpperCase());
+                const cGrp = hdrs.findIndex(h => h === "GROUP" || h === "CATEGORY");
+                const cMat = hdrs.findIndex(h => h.includes("90%"));
+                const cTot = hdrs.findIndex(h => h === "TOTAL" || h.includes("TOTAL"));
+                const cProg = hdrs.findIndex(h => h === "PROGRESS" || h.includes("PROGRESS") || h === "%");
+
+                let rowCount = 0;
+                for (let i = headerIdx + 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r) continue;
+
+                    const groupRaw = r[cGrp];
+                    if (groupRaw === undefined || groupRaw === null || String(groupRaw).trim() === "") {
+                        // Stop if we hit 2 consecutive empty groups
+                        if (i < rows.length - 1) {
+                            const nextRow = rows[i + 1];
+                            if (!nextRow || nextRow[cGrp] === undefined || nextRow[cGrp] === null || String(nextRow[cGrp]).trim() === "") {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                        continue;
+                    }
+
+                    const grpName = String(groupRaw).trim();
+                    const upperGrp = grpName.toUpperCase();
+                    if (upperGrp === "PART NUMBER" || upperGrp === "S.NO" || upperGrp.includes("PRIORITY ACTIONS") || upperGrp.startsWith("PRIORITY")) break;
+
+                    const m = cMat !== -1 && r[cMat] !== undefined && r[cMat] !== "" ? String(r[cMat]) : "-";
+                    const t = cTot !== -1 && r[cTot] !== undefined && r[cTot] !== "" ? String(r[cTot]) : "-";
+                    let pRaw = cProg !== -1 && r[cProg] !== undefined && r[cProg] !== "" ? r[cProg] : "-";
+
+                    let p = pRaw;
+
+                    if ((pRaw === "-" || pRaw === "") && m !== "-" && t !== "-") {
+                        const mNum = parseFloat(m);
+                        const tNum = parseFloat(t);
+                        if (!isNaN(mNum) && !isNaN(tNum) && tNum > 0) {
+                            p = Math.round((mNum / tNum) * 100) + "%";
+                        }
+                    } else if (typeof pRaw === 'number') {
+                        p = Math.round(pRaw * 100) + "%";
+                    } else if (typeof pRaw === 'string' && !pRaw.includes('%') && pRaw !== '-') {
+                        const num = parseFloat(pRaw);
+                        if (!isNaN(num) && num <= 1) {
+                            p = Math.round(num * 100) + "%";
+                        }
+                    }
+
+                    maturityTable.push({
+                        group: grpName,
+                        maturity: m,
+                        total: t,
+                        progress: p
+                    });
+                    rowCount++;
+                }
+                console.log(`[Maturity Parser] Data rows: ${rowCount}`);
+            } else {
+                console.warn(`[Maturity Parser] Could not find header row after title in sheet '${sheetName}'.`);
+            }
+        }
+    }
+    
+    if (!found) {
+        console.warn(`[Maturity Parser] Could not find section title in any sheet.`);
+    }
+
+    return maturityTable;
+}
+
+function parseReadinessTable(workbook) {
+    let summary = [];
+    let found = false;
+    for (let sheetName of workbook.SheetNames) {
+        if (found) break;
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+        const titleIdx = rows.findIndex(r => r && r.some(c => String(c).toUpperCase().includes("READINESS STAGE PROGRESS")));
+        if (titleIdx !== -1) {
+            found = true;
+            let headerIdx = -1;
+            for (let i = titleIdx; i < Math.min(titleIdx + 5, rows.length); i++) {
+                if (rows[i] && rows[i].some(c => String(c).toUpperCase().trim() === "READINESS STAGE" || String(c).toUpperCase().trim() === "COMPLETED")) {
+                    headerIdx = i;
+                    break;
+                }
+            }
+            if (headerIdx !== -1) {
+                const hdrs = rows[headerIdx].map(h => String(h).toUpperCase().trim());
+                const cStage = hdrs.findIndex(h => h.includes("STAGE"));
+                const cComp = hdrs.findIndex(h => h === "COMPLETED");
+                const cTot = hdrs.findIndex(h => h === "TOTAL");
+
+                for (let i = headerIdx + 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r) continue;
+                    
+                    const stageRaw = r[cStage];
+                    if (stageRaw === undefined || stageRaw === null || String(stageRaw).trim() === "") {
+                        if (i < rows.length - 1 && (!rows[i+1] || !rows[i+1][cStage])) break;
+                        continue;
+                    }
+                    
+                    const stage = String(stageRaw).trim();
+                    if (stage.toUpperCase().includes("PARTS BY FUNCTION") || stage.toUpperCase().includes("MATURITY") || stage.toUpperCase() === "GROUP") break;
+
+                    const comp = r[cComp] !== undefined ? r[cComp] : 0;
+                    const tot = r[cTot] !== undefined ? r[cTot] : 0;
+                    
+                    summary.push({
+                        stage: stage,
+                        completed: parseInt(comp) || 0,
+                        total: parseInt(tot) || 0
+                    });
+                }
+            }
+        }
+    }
+    return summary;
+}
+
+function parseOverallStats(workbook) {
+    let stats = { totalParts: null, overallProgress: null };
+    for (let sheetName of workbook.SheetNames) {
+        if (stats.totalParts !== null) break;
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+        
+        for (let i = 0; i < Math.min(30, rows.length); i++) {
+            const r = rows[i];
+            if (!r) continue;
+            
+            const cOv = r.findIndex(c => String(c).toUpperCase().trim() === "OVERALL PROGRESS");
+            const cTr = r.findIndex(c => String(c).toUpperCase().trim() === "TRACKED PARTS");
+            
+            if (cOv !== -1 && cTr !== -1 && i + 1 < rows.length) {
+                const dataRow = rows[i+1];
+                let prog = dataRow[cOv];
+                let tot = dataRow[cTr];
+                
+                if (typeof prog === 'number') {
+                    stats.overallProgress = Math.round(prog * 100);
+                } else if (typeof prog === 'string' && !prog.includes('%') && prog !== '') {
+                    const num = parseFloat(prog);
+                    if (!isNaN(num) && num <= 1) stats.overallProgress = Math.round(num * 100);
+                }
+                
+                if (typeof tot === 'number') {
+                    stats.totalParts = tot;
+                } else if (typeof tot === 'string' && tot !== '') {
+                    const num = parseInt(tot, 10);
+                    if (!isNaN(num)) stats.totalParts = num;
+                }
+                break;
+            }
+        }
+    }
+    return stats;
+}
+
 function formatExcelDate(val) {
   if (!val || String(val).trim() === "" || String(val).trim() === "-") return "-";
   if (!isNaN(val) && typeof val === 'number') {
@@ -601,9 +811,12 @@ function renderPQMainView() {
        return;
     }
 
-    const total = pd.parts.length;
+    const total = (pd.stats && pd.stats.totalParts !== null) ? pd.stats.totalParts : pd.parts.length;
     let ovrPct = 0;
-    if (total > 0) {
+    
+    if (pd.stats && pd.stats.overallProgress !== null) {
+        ovrPct = pd.stats.overallProgress;
+    } else if (total > 0) {
       let totalStages = total * 6;
       let compStages = pd.summary.reduce((a, b) => a + b.completed, 0);
       ovrPct = Math.round((compStages / totalStages) * 100);
@@ -681,19 +894,33 @@ function renderPQDetailView(projectKey) {
             </div>
         </div>
         
-        <div class="panel" style="margin-bottom:24px;">
-            <div class="panel-header"><div><h3>READINESS STAGE PROGRESS</h3></div></div>
-            <div class="table-scroll">
-                <table>
-                    <thead><tr><th>Readiness Stage</th><th>Completed</th><th>Total</th><th>Progress</th></tr></thead>
-                    <tbody>
-                        ${pd.summary.map(row => {
+        <style>
+          .pq-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+            align-items: start;
+          }
+        </style>
+
+        <div class="pq-dashboard-grid">
+            <div class="panel" style="margin-bottom:0; height:100%;">
+                <div class="panel-header"><div><h3>READINESS STAGE PROGRESS</h3></div></div>
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th>Readiness Stage</th><th>Completed</th><th>Total</th><th>Progress</th></tr></thead>
+                        <tbody>
+                            ${pd.summary.map(row => {
     const pct = row.total ? Math.round((row.completed / row.total) * 100) : 0;
     return `<tr><td><strong>${row.stage}</strong></td><td>${row.completed}</td><td>${row.total}</td><td><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><span class="progress-text">${pct}%</span></td></tr>`;
   }).join("")}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
+
+            ${renderMaturityProgressTable(pd.maturityTable)}
         </div>
         
         <div class="part-details-selector">
@@ -711,7 +938,52 @@ function renderPQDetailView(projectKey) {
         </div>
     `;
 
-  v.innerHTML = html;
+    v.innerHTML = html;
+}
+
+function renderMaturityProgressTable(maturityTable) {
+    if (!maturityTable || maturityTable.length === 0) {
+        return `<div class="panel" style="margin-bottom:0; height:100%; display:flex; align-items:center; justify-content:center; color:#6b7280; padding:40px;">No Maturity Data Found</div>`;
+    }
+
+    let html = `
+        <div class="panel" style="margin-bottom:0; height: 100%;">
+            <div class="panel-header"><div><h3 style="text-transform: uppercase;">PARTS BY FUNCTION & CATEGORY — MATURITY PROGRESS</h3></div></div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Group</th>
+                            <th style="text-align:center;">&ge;90% Maturity</th>
+                            <th style="text-align:center;">Total</th>
+                            <th style="text-align:center;">Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    maturityTable.forEach(row => {
+        const isMainGroup = ["ALL PARTS", "MECH", "HW", "FUNCTION NOT SPECIFIED"].includes(row.group.toUpperCase()) || (!row.group.includes("-") && row.group.toUpperCase() === row.group);
+        const trStyle = isMainGroup ? `background:#f9fafb; font-weight:600; color:#111827;` : ``;
+        const tdPadding = isMainGroup ? `padding-left:16px;` : `padding-left:32px; color:#4b5563;`;
+
+        html += `
+            <tr style="${trStyle}">
+                <td style="${tdPadding}">${row.group}</td>
+                <td style="text-align:center;">${row.maturity}</td>
+                <td style="text-align:center;">${row.total}</td>
+                <td style="text-align:center; font-weight:500; color:#1769e0;">${row.progress}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    return html;
 }
 
 window.renderPartDetails = function (id) {
@@ -735,15 +1007,33 @@ window.renderPartDetails = function (id) {
   container.style.border = "none";
 
   container.innerHTML = `
-        <div class="part-info-bar">
-            <div class="part-info-item"><span class="part-info-label">PART NUMBER</span><span class="part-info-value">${data.partNumber}</span></div>
-            <div class="part-info-item"><span class="part-info-label">PART TYPE</span><span class="part-info-value">${data.partType}</span></div>
-            <div class="part-info-item"><span class="part-info-label">PE KICK-OFF</span><span class="part-info-value">${data.peKickOff}</span></div>
-            <div class="part-info-item"><span class="part-info-label">BOM REV</span><span class="part-info-value">${data.bomRev}</span></div>
-            <div class="part-info-item"><span class="part-info-label">REV</span><span class="part-info-value">${data.rev}</span></div>
-            <div class="part-info-item"><span class="part-info-label">QTY</span><span class="part-info-value">${data.qty}</span></div>
-            <div class="part-info-item"><span class="part-info-label">CURRENT STAGE</span><span class="part-info-value" style="color: #1769e0;">${data.currentStage}</span></div>
-            <div class="part-info-item"><span class="part-info-label">READINESS</span><span class="part-info-value" style="color: #1769e0;">${data.readiness}</span></div>
+        <div class="table-scroll" style="margin-bottom: 24px; border-radius: 8px; border: 1px solid var(--border); background: #fff;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: #f9fafb; font-size: 11px; color: #6b7280; text-transform: uppercase;">
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">PART NUMBER</th>
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">PART TYPE</th>
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">PE KICK-OFF</th>
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">BOM REV</th>
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">REV</th>
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">QTY</th>
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">CURRENT STAGE</th>
+                        <th style="padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600;">READINESS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="font-size: 14px; font-weight: 500; color: #111827;">
+                        <td style="padding: 12px 16px;">${data.partNumber}</td>
+                        <td style="padding: 12px 16px;">${data.partType}</td>
+                        <td style="padding: 12px 16px;">${data.peKickOff}</td>
+                        <td style="padding: 12px 16px;">${data.bomRev}</td>
+                        <td style="padding: 12px 16px;">${data.rev}</td>
+                        <td style="padding: 12px 16px;">${data.qty}</td>
+                        <td style="padding: 12px 16px; color: #1769e0;">${data.currentStage}</td>
+                        <td style="padding: 12px 16px; color: #1769e0;">${data.readiness}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
         <div class="part-cards-grid">
             ${data.cards.map(c => `
