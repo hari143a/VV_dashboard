@@ -872,6 +872,105 @@ tbody tr:hover {
   border-radius: 999px
 }
 
+.products-section .products-card,
+.portfolio-summary-section .portfolio-summary-card {
+  padding: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.products-section .area-title,
+.portfolio-summary-section .area-title {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.5fr);
+  gap: 16px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid #d5e7ee;
+  border-radius: 0;
+  align-items: center;
+}
+
+.products-status-summary,
+.portfolio-status-summary {
+  min-width: 0;
+  width: 100%;
+}
+
+.products-status-summary table,
+.portfolio-status-summary table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.products-status-summary th,
+.products-status-summary td,
+.portfolio-status-summary th,
+.portfolio-status-summary td {
+  width: 20%;
+  padding: 8px 3px;
+  text-align: center;
+}
+
+.products-status-summary th,
+.portfolio-status-summary th {
+  border-bottom: 1px solid #e5eef2;
+  color: #6b8595;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.products-status-summary td,
+.portfolio-status-summary td {
+  color: #0e4a6e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.products-status-summary th:not(:last-child),
+.products-status-summary td:not(:last-child),
+.portfolio-status-summary th:not(:last-child),
+.portfolio-status-summary td:not(:last-child) {
+  border-right: 1px solid #e5eef2;
+}
+
+@media(max-width:760px) {
+  .products-section .area-title,
+  .portfolio-summary-section .area-title {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+@media(max-width:420px) {
+  .products-status-summary th,
+  .portfolio-status-summary th {
+    padding: 7px 1px;
+    font-size: 8px;
+    letter-spacing: 0;
+    white-space: normal;
+  }
+
+  .products-status-summary td,
+  .portfolio-status-summary td {
+    padding: 7px 1px;
+    font-size: 12px;
+  }
+}
+
+@media(max-width:360px) {
+  .products-status-summary th,
+  .portfolio-status-summary th {
+    font-size: 7px;
+  }
+}
+
 .table-panel {
   padding: 0;
   overflow: hidden;

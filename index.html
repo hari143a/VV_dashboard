@@ -127,16 +127,17 @@
           </div>
         </div>
 
-        <div class="area-section">
-          <div class="area-title">
-            <div><span class="area-icon products">▤</span>
-              <div>
-                <h3>Products</h3>
-                <p>Product and product validation activities.</p>
+        <div class="area-section products-section">
+          <div class="panel products-card">
+            <div class="area-title">
+              <div><span class="area-icon products">▤</span>
+                <div>
+                  <h3>Products</h3>
+                  <p>Product and product validation activities.</p>
+                </div>
               </div>
+              <div id="productsStatusSummary" class="products-status-summary"></div>
             </div>
-            <span id="productCount" class="area-count"></span>
-          </div>
           <style>
           <style>
             .expandable-item { border-bottom: 1px solid #f3f4f6; transition: background-color 0.2s ease; }
@@ -162,77 +163,81 @@
             .status-badge.rejected { background-color: #fee2e2; color: #991b1b; }
             .status-badge.open { background-color: #f3f4f6; color: #374151; }
           </style>
-          <div class="panel">
             <div id="productsExpandableList"></div>
           </div>
         </div>
 
-        <div class="area-section">
-          <div class="area-title">
-            <div><span class="area-icon sourcing">🛒</span>
-              <div>
-                <h3>Sourcing</h3>
-                <p>Sourced components/items requiring validation.</p>
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <div><span class="area-icon sourcing">🛒</span>
+                <div>
+                  <h3>Sourcing</h3>
+                  <p>Sourced components/items requiring validation.</p>
+                </div>
               </div>
-            </div><span id="sourcingCount" class="area-count"></span>
-          </div>
-          <div class="panel">
+              <div id="sourcingStatusSummary" class="portfolio-status-summary"></div>
+            </div>
             <div id="sourcingExpandableList"></div>
           </div>
         </div>
 
-        <div class="area-section">
-          <div class="area-title">
-            <div><span class="area-icon field">⚠</span>
-              <div>
-                <h3>Field Issues</h3>
-                <p>Field issues with corrective-action validation.</p>
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <div><span class="area-icon field">⚠</span>
+                <div>
+                  <h3>Field Issues</h3>
+                  <p>Field issues with corrective-action validation.</p>
+                </div>
               </div>
-            </div><span id="fieldIssuesCount" class="area-count"></span>
-          </div>
-          <div class="panel">
+              <div id="fieldIssuesStatusSummary" class="portfolio-status-summary"></div>
+            </div>
             <div id="fieldIssuesExpandableList"></div>
           </div>
         </div>
 
-        <div class="area-section">
-          <div class="area-title">
-            <div><span class="area-icon quality">✓</span>
-              <div>
-                <h3>Quality</h3>
-                <p>Quality verification and inspection activities.</p>
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <div><span class="area-icon quality">✓</span>
+                <div>
+                  <h3>Quality</h3>
+                  <p>Quality verification and inspection activities.</p>
+                </div>
               </div>
-            </div><span id="qualityCount" class="area-count"></span>
-          </div>
-          <div class="panel">
+              <div id="qualityStatusSummary" class="portfolio-status-summary"></div>
+            </div>
             <div id="qualityExpandableList"></div>
           </div>
         </div>
 
-        <div class="area-section">
-          <div class="area-title">
-            <div><span class="area-icon rnd">💡</span>
-              <div>
-                <h3>R&amp;D</h3>
-                <p>Research and development validation activities.</p>
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <div><span class="area-icon rnd">💡</span>
+                <div>
+                  <h3>R&amp;D</h3>
+                  <p>Research and development validation activities.</p>
+                </div>
               </div>
-            </div><span id="rndCount" class="area-count"></span>
-          </div>
-          <div class="panel">
+              <div id="rndStatusSummary" class="portfolio-status-summary"></div>
+            </div>
             <div id="rndExpandableList"></div>
           </div>
         </div>
 
-        <div class="area-section">
-          <div class="area-title">
-            <div><span class="area-icon nit">⚙</span>
-              <div>
-                <h3>NIT</h3>
-                <p>New Item Testing validation activities.</p>
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <div><span class="area-icon nit">⚙</span>
+                <div>
+                  <h3>NIT</h3>
+                  <p>New Item Testing validation activities.</p>
+                </div>
               </div>
-            </div><span id="nitCount" class="area-count"></span>
-          </div>
-          <div class="panel">
+              <div id="nitStatusSummary" class="portfolio-status-summary"></div>
+            </div>
             <div id="nitExpandableList"></div>
           </div>
         </div>
@@ -244,16 +249,17 @@
           </div>
         </div>
 
-        <div class="area-section">
-          <div class="area-title">
-            <div><span class="area-icon nit">⚙</span>
-              <div>
-                <h3>Part Qualification</h3>
-                <p>Readiness stage progress across all Part Qualification projects.</p>
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <div><span class="area-icon nit">⚙</span>
+                <div>
+                  <h3>Part Qualification</h3>
+                  <p>Readiness stage progress across all Part Qualification projects.</p>
+                </div>
               </div>
-            </div><span id="peProjectCount" class="area-count"></span>
-          </div>
-          <div class="panel">
+              <div id="peProjectStatusSummary" class="portfolio-status-summary"></div>
+            </div>
             <div id="peProjectExpandableList"></div>
           </div>
         </div>

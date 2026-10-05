@@ -84,12 +84,12 @@ function overall() {
 function renderOverview() {
   renderOverviewKpis();
 
-  renderExpandableList(products, "productsExpandableList", "productCount");
-  renderExpandableList(areaData.sourcing, "sourcingExpandableList", "sourcingCount");
-  renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", "fieldIssuesCount");
-  renderExpandableList(areaData.quality, "qualityExpandableList", "qualityCount");
-  renderExpandableList(areaData.rnd, "rndExpandableList", "rndCount");
-  renderExpandableList(areaData.nit, "nitExpandableList", "nitCount");
+  renderExpandableList(products, "productsExpandableList", null, "productsStatusSummary");
+  renderExpandableList(areaData.sourcing, "sourcingExpandableList", null, "sourcingStatusSummary");
+  renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", null, "fieldIssuesStatusSummary");
+  renderExpandableList(areaData.quality, "qualityExpandableList", null, "qualityStatusSummary");
+  renderExpandableList(areaData.rnd, "rndExpandableList", null, "rndStatusSummary");
+  renderExpandableList(areaData.nit, "nitExpandableList", null, "nitStatusSummary");
   renderPortfolioCharts();
   // Auto-load ALL Excel projects from projectsConfig so PE chart renders on the overview page.
   // Adding a new project to projectsConfig is all that's needed — it loads automatically here.
@@ -160,7 +160,7 @@ function renderProductsPage() {
   $("productsPageTable").querySelectorAll(".product-link").forEach(b => b.onclick = () => showProduct(b.dataset.product));
 }
 
-function renderExpandableList(items, containerId, countId) {
+function renderExpandableList(items, containerId, countId, summaryId = null) {
   let total = items.length, open = 0, inProgress = 0, complete = 0, rejects = 0;
   items.forEach(x => {
     let s = (x.status || "").toLowerCase();
@@ -170,8 +170,16 @@ function renderExpandableList(items, containerId, countId) {
     else if (s.includes("reject")) rejects++;
   });
 
-  if ($(countId)) {
+  if (countId && $(countId)) {
     $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Completed: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejected: <strong style="color:var(--danger)">${rejects}</strong></span>`;
+  }
+
+  const summaryEl = summaryId ? $(summaryId) : null;
+  if (summaryEl) {
+    summaryEl.innerHTML = `<table aria-label="Status summary">
+      <thead><tr><th scope="col">Total</th><th scope="col">Open</th><th scope="col">In Progress</th><th scope="col">Completed</th><th scope="col">Rejected</th></tr></thead>
+      <tbody><tr><td>${total}</td><td>${open}</td><td>${inProgress}</td><td>${complete}</td><td>${rejects}</td></tr></tbody>
+    </table>`;
   }
 
   const listEl = $(containerId);
@@ -329,7 +337,7 @@ function renderPEOverviewChart() {
 function renderPEPortfolioTable() {
   const projectKeys = Object.keys(projectsConfig);
   const listEl = $("peProjectExpandableList");
-  const countEl = $("peProjectCount");
+  const summaryEl = $("peProjectStatusSummary");
   if (!listEl) return;
 
   const loaded = projectKeys.filter(k => loadedProjectsData[k] && !loadedProjectsData[k].error);
@@ -359,16 +367,11 @@ function renderPEPortfolioTable() {
     // Future: increment rejectedCount when a rejected field is available in the data
   });
 
-  // Render status summary into the header
-  if (countEl) {
-    countEl.innerHTML =
-      `<span style="font-size:12px; color:#6b7280; font-weight:normal;">` +
-      `Total: <strong style="color:#111827">${loaded.length}</strong>` +
-      ` &nbsp;|&nbsp; Open: <strong style="color:#374151">${openCount}</strong>` +
-      ` &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgressCount}</strong>` +
-      ` &nbsp;|&nbsp; Completed: <strong style="color:var(--success)">${completedCount}</strong>` +
-      ` &nbsp;|&nbsp; Rejected: <strong style="color:var(--danger)">${rejectedCount}</strong>` +
-      `</span>`;
+  if (summaryEl) {
+    summaryEl.innerHTML = `<table aria-label="Part Qualification project status summary">
+      <thead><tr><th scope="col">Total</th><th scope="col">Open</th><th scope="col">In Progress</th><th scope="col">Completed</th><th scope="col">Rejected</th></tr></thead>
+      <tbody><tr><td>${loaded.length}</td><td>${openCount}</td><td>${inProgressCount}</td><td>${completedCount}</td><td>${rejectedCount}</td></tr></tbody>
+    </table>`;
   }
 
   listEl.innerHTML = projectStats.map(({ pd, total, design, pq, src, sq, samp, fac, progress }, i) => {
