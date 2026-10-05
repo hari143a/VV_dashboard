@@ -323,7 +323,7 @@ function renderPEOverviewChart() {
         ]
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { boxWidth: 12, font: { size: 10 } } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 10 }, padding: 10 } } } }
   });
 }
 function renderPEPortfolioTable() {
