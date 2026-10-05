@@ -75,11 +75,50 @@
       <section id="overviewView" class="view active">
         <div class="page-intro">
           <div>
-            <h2>Overall V&amp;V Overview</h2>
+            <h2>Overall Overview</h2>
             <p>Unified validation status across Products, Sourcing, Field Issues, Quality and R&amp;D.</p>
           </div>
         </div>
         <div class="kpi-grid" id="overviewKpis"></div>
+
+        <div class="two-column">
+          <div>
+            <div class="section-heading" style="margin-top: 0; margin-bottom: 15px;">
+              <div>
+                <h2>VERIFICATION &amp; VALIDATION</h2>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h3>Overall Test Status</h3>
+                  <p>Combined status across all validation areas.</p>
+                </div>
+              </div>
+              <div class="chart-wrap"><canvas id="portfolioStatusChart"></canvas></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-heading" style="margin-top: 0; margin-bottom: 15px;">
+              <div>
+                <h2>PRODUCT ENGINEERING</h2>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <h3>Part Qualification</h3>
+                  <p id="peSubtitle">Loading projects...</p>
+                </div>
+              </div>
+              <div class="chart-wrap" style="position: relative;">
+                <div id="peLoadingIndicator" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#6b7280; font-size:14px;">Loading Excel data...</div>
+                <canvas id="peStatusChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div class="section-heading">
           <div>
@@ -98,23 +137,33 @@
             </div>
             <span id="productCount" class="area-count"></span>
           </div>
-          <div class="panel table-panel">
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Total TC</th>
-                    <th>Executed</th>
-                    <th>Pass</th>
-                    <th>Fail</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="productsTable"></tbody>
-              </table>
-            </div>
+          <style>
+          <style>
+            .expandable-item { border-bottom: 1px solid #f3f4f6; transition: background-color 0.2s ease; }
+            .expandable-item:last-child { border-bottom: none; }
+            .expandable-item.expanded { background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+            .expandable-header { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; font-weight: 600; font-size: 14px; color: #1e293b; transition: background-color 0.2s ease; }
+            .expandable-header:hover { background-color: #f1f5f9; }
+            .expandable-icon { margin-right: 12px; color: #64748b; font-size: 12px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
+            .expandable-item.expanded .expandable-icon { transform: rotate(90deg); color: #3b82f6; }
+            .expandable-content { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.3s ease, opacity 0.3s ease; padding: 0 16px; overflow: hidden; }
+            .expandable-item.expanded .expandable-content { grid-template-rows: 1fr; opacity: 1; padding: 0 16px 16px 16px; }
+            .expandable-content-inner { min-height: 0; }
+            .expandable-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; table-layout: fixed; margin-top: 8px; }
+            .expandable-table th { padding: 6px 8px 6px 0; font-weight: 600; color: #64748b; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+            .expandable-table td { padding: 8px 8px 8px 0; color: #334155; vertical-align: middle; }
+            .progress-container { display: flex; align-items: center; gap: 8px; }
+            .progress-track-modern { width: 100px; height: 6px; background-color: #e2e8f0; border-radius: 9999px; overflow: hidden; margin: 0; }
+            .progress-fill-modern { height: 100%; background-color: #3b82f6; border-radius: 9999px; transition: width 0.4s ease; }
+            .progress-text-modern { font-size: 12px; font-weight: 500; color: #475569; min-width: 32px; }
+            .status-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+            .status-badge.in-validation { background-color: #e0f2fe; color: #0369a1; }
+            .status-badge.completed { background-color: #dcfce7; color: #166534; }
+            .status-badge.rejected { background-color: #fee2e2; color: #991b1b; }
+            .status-badge.open { background-color: #f3f4f6; color: #374151; }
+          </style>
+          <div class="panel">
+            <div id="productsExpandableList"></div>
           </div>
         </div>
 
@@ -127,23 +176,8 @@
               </div>
             </div><span id="sourcingCount" class="area-count"></span>
           </div>
-          <div class="panel table-panel">
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Total TC</th>
-                    <th>Executed</th>
-                    <th>Pass</th>
-                    <th>Fail</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="sourcingTable"></tbody>
-              </table>
-            </div>
+          <div class="panel">
+            <div id="sourcingExpandableList"></div>
           </div>
         </div>
 
@@ -156,23 +190,8 @@
               </div>
             </div><span id="fieldIssuesCount" class="area-count"></span>
           </div>
-          <div class="panel table-panel">
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Total TC</th>
-                    <th>Executed</th>
-                    <th>Pass</th>
-                    <th>Fail</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="fieldIssuesTable"></tbody>
-              </table>
-            </div>
+          <div class="panel">
+            <div id="fieldIssuesExpandableList"></div>
           </div>
         </div>
 
@@ -185,23 +204,8 @@
               </div>
             </div><span id="qualityCount" class="area-count"></span>
           </div>
-          <div class="panel table-panel">
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Total TC</th>
-                    <th>Executed</th>
-                    <th>Pass</th>
-                    <th>Fail</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="qualityTable"></tbody>
-              </table>
-            </div>
+          <div class="panel">
+            <div id="qualityExpandableList"></div>
           </div>
         </div>
 
@@ -214,23 +218,8 @@
               </div>
             </div><span id="rndCount" class="area-count"></span>
           </div>
-          <div class="panel table-panel">
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Total TC</th>
-                    <th>Executed</th>
-                    <th>Pass</th>
-                    <th>Fail</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="rndTable"></tbody>
-              </table>
-            </div>
+          <div class="panel">
+            <div id="rndExpandableList"></div>
           </div>
         </div>
 
@@ -243,37 +232,32 @@
               </div>
             </div><span id="nitCount" class="area-count"></span>
           </div>
-          <div class="panel table-panel">
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Total TC</th>
-                    <th>Executed</th>
-                    <th>Pass</th>
-                    <th>Fail</th>
-                    <th>Progress</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="nitTable"></tbody>
-              </table>
-            </div>
+          <div class="panel">
+            <div id="nitExpandableList"></div>
           </div>
         </div>
 
-        <div class="two-column">
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <h3>Overall Test Status</h3>
-                <p>Combined status across all validation areas.</p>
-              </div>
-            </div>
-            <div class="chart-wrap"><canvas id="portfolioStatusChart"></canvas></div>
+        <div class="section-heading">
+          <div>
+            <h2>Product Portfolio</h2>
+            <p>Every product engineering project is displayed with readiness stage progress.</p>
           </div>
         </div>
+
+        <div class="area-section">
+          <div class="area-title">
+            <div><span class="area-icon nit">⚙</span>
+              <div>
+                <h3>Part Qualification</h3>
+                <p>Readiness stage progress across all Part Qualification projects.</p>
+              </div>
+            </div><span id="peProjectCount" class="area-count"></span>
+          </div>
+          <div class="panel">
+            <div id="peProjectExpandableList"></div>
+          </div>
+        </div>
+
       </section>
 
       <section id="productsView" class="view">

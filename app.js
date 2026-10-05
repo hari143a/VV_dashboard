@@ -61,7 +61,7 @@ const products = [
 
 
 const $ = id => document.getElementById(id), pct = (a, b) => b ? Math.round(a / b * 100) : 0;
-const kpi = (l, v, n = "") => { const icons = { "Validation Items": "▤", "Test Cases": "☷", "Executed": "▶", "Passed": "✓", "Failed": "×", "Blocked": "!", "Overall Pass Rate": "◔", "Total Test Cases": "☷", "Pass Rate": "◔" }; const tone = { "Passed": "green", "Failed": "red", "Executed": "cyan", "Validation Items": "blue", "Test Cases": "green", "Overall Pass Rate": "blue", "Blocked": "purple", "Total Test Cases": "green", "Pass Rate": "blue" }; return `<div class="kpi"><div class="kpi-icon ${tone[l] || "blue"}">${icons[l] || "•"}</div><div class="kpi-content"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-note">${n}</div></div></div>` };
+const kpi = (l, v, n = "") => { const icons = { "Validation Items": "▤", "Test Cases": "☷", "Executed": "▶", "Passed": "✓", "Failed": "×", "Blocked": "!", "Overall Pass Rate": "◔", "Total Test Cases": "☷", "Pass Rate": "◔", "Total": "▤", "Open": "☷", "In Progress": "▶", "Completed": "✓", "Rejected": "×" }; const tone = { "Passed": "green", "Failed": "red", "Executed": "cyan", "Validation Items": "blue", "Test Cases": "green", "Overall Pass Rate": "blue", "Blocked": "purple", "Total Test Cases": "green", "Pass Rate": "blue", "Total": "blue", "Open": "green", "In Progress": "cyan", "Completed": "green", "Rejected": "red" }; return `<div class="kpi"><div class="kpi-icon ${tone[l] || "blue"}">${icons[l] || "•"}</div><div class="kpi-content"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div>${n ? `<div class="kpi-note">${n}</div>` : ""}</div></div>` };
 const badge = s => `<span class="status status-${s.replaceAll(" ", "-")}">${s}</span>`;
 
 function metrics(item) {
@@ -82,22 +82,73 @@ function overall() {
   return allItems().reduce((a, x) => { const m = metrics(x); a.items++; a.tests += m.tests; a.executed += m.executed; a.pass += m.pass; a.fail += m.fail; a.blocked += m.blocked; return a }, { items: 0, tests: 0, executed: 0, pass: 0, fail: 0, blocked: 0 });
 }
 function renderOverview() {
-  const s = overall();
-  $("overviewKpis").innerHTML = [
-    kpi("Validation Items", s.items, "All areas"),
-    kpi("Test Cases", s.tests, "Across portfolio"),
-    kpi("Executed", s.executed, `${pct(s.executed, s.tests)}% execution`),
-    kpi("Passed", s.pass, "Executed tests"),
-    kpi("Failed", s.fail, "Requires attention")
-  ].join("");
+  renderOverviewKpis();
 
-  renderAreaTable("productsTable", products, "productCount", "Products", true);
-  renderAreaTable("sourcingTable", areaData.sourcing, "sourcingCount", "Sourcing", true);
-  renderAreaTable("fieldIssuesTable", areaData.fieldIssues, "fieldIssuesCount", "Field Issues", true);
-  renderAreaTable("qualityTable", areaData.quality, "qualityCount", "Quality", true);
-  renderAreaTable("rndTable", areaData.rnd, "rndCount", "R&D", true);
-  renderAreaTable("nitTable", areaData.nit, "nitCount", "NIT", true);
+  renderExpandableList(products, "productsExpandableList", "productCount");
+  renderExpandableList(areaData.sourcing, "sourcingExpandableList", "sourcingCount");
+  renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", "fieldIssuesCount");
+  renderExpandableList(areaData.quality, "qualityExpandableList", "qualityCount");
+  renderExpandableList(areaData.rnd, "rndExpandableList", "rndCount");
+  renderExpandableList(areaData.nit, "nitExpandableList", "nitCount");
   renderPortfolioCharts();
+  // Auto-load ALL Excel projects from projectsConfig so PE chart renders on the overview page.
+  // Adding a new project to projectsConfig is all that's needed — it loads automatically here.
+  Object.keys(projectsConfig).forEach(key => {
+    loadExcelProject(key).then(() => {
+      renderPEOverviewChart();
+      renderPEPortfolioTable();
+      renderOverviewKpis(); // refresh combined totals now that PE data is available
+    });
+  });
+}
+
+/**
+ * Calculates and renders the five Overall Overview KPI cards.
+ * Combines V&V item statuses (from allItems()) with PE project statuses
+ * (from loadedProjectsData) so the cards always reflect both areas.
+ * Called once on initial render, and again each time a PE project loads.
+ */
+function renderOverviewKpis() {
+  // --- V&V counts: use the same status-string logic as every Validation Portfolio section ---
+  const vvItems = allItems();
+  let vvTotal = vvItems.length, vvOpen = 0, vvInProgress = 0, vvComplete = 0, vvRejects = 0;
+  vvItems.forEach(x => {
+    const st = (x.status || "").toLowerCase();
+    if (st.includes("open"))                              vvOpen++;
+    else if (st.includes("progress") || st.includes("in validation")) vvInProgress++;
+    else if (st.includes("complete"))                     vvComplete++;
+    else if (st.includes("reject"))                       vvRejects++;
+  });
+
+  // --- PE counts: mirror the exact progress logic used in renderPEPortfolioTable() ---
+  let peTotal = 0, peOpen = 0, peInProgress = 0, peComplete = 0, peRejects = 0;
+  Object.keys(projectsConfig).forEach(key => {
+    const pd = loadedProjectsData[key];
+    if (!pd || pd.error) return; // project not yet loaded or failed
+    const parts = pd.parts || [];
+    const total  = parts.length;
+    const design = parts.filter(p => p.designDone).length;
+    const pq     = parts.filter(p => p.pqDone).length;
+    const src    = parts.filter(p => p.srcDone).length;
+    const sq     = parts.filter(p => p.sqDone).length;
+    const samp   = parts.filter(p => p.sampDone).length;
+    const fac    = parts.filter(p => p.facDone).length;
+    const progress = total > 0 ? Math.round((design + pq + src + sq + samp + fac) / (total * 6) * 100) : 0;
+    peTotal++;
+    if (progress === 100)      peComplete++;
+    else if (progress > 0)     peInProgress++;
+    else                       peOpen++;
+    // Future: peRejects++ when a rejected field is added to PE data
+  });
+
+  // --- Combined totals (no double-counting: V&V items ≠ PE projects) ---
+  $("overviewKpis").innerHTML = [
+    kpi("Total",       vvTotal + peTotal,       ""),
+    kpi("Open",        vvOpen + peOpen,          ""),
+    kpi("In Progress", vvInProgress + peInProgress, ""),
+    kpi("Completed",   vvComplete + peComplete,  ""),
+    kpi("Rejected",    vvRejects + peRejects,    "")
+  ].join("");
 }
 
 function renderProductsPage() {
@@ -109,7 +160,7 @@ function renderProductsPage() {
   $("productsPageTable").querySelectorAll(".product-link").forEach(b => b.onclick = () => showProduct(b.dataset.product));
 }
 
-function renderAreaTable(id, items, countId, label, clickable) {
+function renderExpandableList(items, containerId, countId) {
   let total = items.length, open = 0, inProgress = 0, complete = 0, rejects = 0;
   items.forEach(x => {
     let s = (x.status || "").toLowerCase();
@@ -119,21 +170,252 @@ function renderAreaTable(id, items, countId, label, clickable) {
     else if (s.includes("reject")) rejects++;
   });
 
-  $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Complete: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejects: <strong style="color:var(--danger)">${rejects}</strong></span>`;
-  $(id).innerHTML = items.map((x, i) => {
+  if ($(countId)) {
+    $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Completed: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejected: <strong style="color:var(--danger)">${rejects}</strong></span>`;
+  }
+
+  const listEl = $(containerId);
+  if (!listEl) return;
+  
+  const getBadgeClass = (s) => {
+    s = s.toLowerCase();
+    if (s.includes("progress") || s.includes("validation")) return "in-validation";
+    if (s.includes("complete") || s.includes("pass")) return "completed";
+    if (s.includes("reject") || s.includes("fail")) return "rejected";
+    return "open";
+  };
+  
+  listEl.innerHTML = items.map((x, i) => {
     const m = metrics(x);
-    const detailId = label === "Products" ? x.id : `${label}-${i}`;
-    return `<tr><td>${clickable ? `<button class="product-link" data-area="${label}" data-index="${i}" data-id="${detailId}">${x.name}</button>` : `<strong>${x.name}</strong>`}</td><td>${m.tests}</td><td>${m.executed}</td><td>${m.pass}</td><td>${m.fail}</td><td><div class="progress-track"><div class="progress-fill" style="width:${m.progress}%"></div></div><span class="progress-text">${m.progress}%</span></td><td>${badge(x.status)}</td></tr>`;
+    const badgeClass = getBadgeClass(x.status);
+    return `<div class="expandable-item" id="exp-item-${containerId}-${i}">
+      <div class="expandable-header" onclick="toggleExpand('${containerId}', ${i})">
+        <span class="expandable-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </span>
+        ${x.name}
+      </div>
+      <div class="expandable-content">
+        <div class="expandable-content-inner">
+          <table class="expandable-table">
+            <thead>
+              <tr>
+                <th style="width:14%">Total TC</th>
+                <th style="width:14%">Executed</th>
+                <th style="width:14%">Pass</th>
+                <th style="width:14%">Fail</th>
+                <th style="width:25%">Progress</th>
+                <th style="width:19%">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${m.tests}</td>
+                <td>${m.executed}</td>
+                <td>${m.pass}</td>
+                <td>${m.fail}</td>
+                <td>
+                  <div class="progress-container">
+                    <div class="progress-track-modern"><div class="progress-fill-modern" style="width:${m.progress}%"></div></div>
+                    <span class="progress-text-modern">${m.progress}%</span>
+                  </div>
+                </td>
+                <td><span class="status-badge ${badgeClass}">${x.status}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
   }).join("");
-  $(id).querySelectorAll(".product-link").forEach(btn => btn.onclick = () => {
-    if (btn.dataset.area === "Products") showProduct(btn.dataset.id);
-    else showAreaItem(btn.dataset.area, +btn.dataset.index);
+}
+
+window.toggleExpand = function(containerId, index) {
+  const allItems = document.querySelectorAll('#' + containerId + ' .expandable-item');
+  allItems.forEach((item, i) => {
+    if (i === index) {
+      item.classList.toggle('expanded');
+    } else {
+      item.classList.remove('expanded');
+    }
+  });
+};
+
+function renderPortfolioCharts() {
+  const items = allItems();
+  let open = 0, inProgress = 0, complete = 0, rejects = 0;
+  items.forEach(x => {
+    let st = (x.status || "").toLowerCase();
+    if (st.includes("open")) open++;
+    else if (st.includes("progress") || st.includes("in validation")) inProgress++;
+    else if (st.includes("complete")) complete++;
+    else if (st.includes("reject")) rejects++;
+  });
+
+  if (window.statusChart) statusChart.destroy();
+  statusChart = new Chart($("portfolioStatusChart"), { 
+    type: "doughnut", 
+    data: { 
+      labels: ["Open", "In Progress", "Completed", "Rejected"], 
+      datasets: [{ 
+        data: [open, inProgress, complete, rejects],
+        backgroundColor: ["#6b7280", "#3b82f6", "#10b981", "#ef4444"]
+      }] 
+    }, 
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } } 
   });
 }
-function renderPortfolioCharts() {
-  const s = overall();
-  if (window.statusChart) statusChart.destroy();
-  statusChart = new Chart($("portfolioStatusChart"), { type: "doughnut", data: { labels: ["Passed", "Failed", "Not Executed"], datasets: [{ data: [s.pass, s.fail, s.tests - s.executed] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } } });
+window.peStatusChart = null;
+function renderPEOverviewChart() {
+  // Auto-detect ALL projects from projectsConfig — adding a new project is enough
+  const projectKeys = Object.keys(projectsConfig);
+  const anyLoaded = projectKeys.some(k => loadedProjectsData[k]);
+
+  if (!anyLoaded) return;
+
+  const loader = $("peLoadingIndicator");
+  if (loader) loader.style.display = "none";
+
+  // Update subtitle dynamically with all project names
+  const peSubtitle = $("peSubtitle");
+  if (peSubtitle) {
+    const names = projectKeys.map(k => projectsConfig[k].name).join(' & ');
+    peSubtitle.textContent = names + ' parts by stage.';
+  }
+
+  const stages = {
+    "Not Started": 0,
+    "Design Readiness": 0,
+    "Part Qualification": 0,
+    "Sourcing Readiness": 0,
+    "Supplier Qualification": 0,
+    "Sample / Lot Procurement": 0,
+    "Factory Handover": 0
+  };
+
+  // Gather parts from ALL loaded projects automatically
+  const allParts = projectKeys.flatMap(k => (loadedProjectsData[k]?.parts || []));
+
+  allParts.forEach(p => {
+    if (p.currentStage && stages[p.currentStage] !== undefined) {
+      stages[p.currentStage]++;
+    }
+  });
+
+  const labels = Object.keys(stages);
+  const data = Object.values(stages);
+
+  if (window.peStatusChart) window.peStatusChart.destroy();
+  window.peStatusChart = new Chart($("peStatusChart"), {
+    type: "doughnut",
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: [
+          "#e5e7eb", // Not Started
+          "#fcd34d", // Design
+          "#fb923c", // Part Qual
+          "#60a5fa", // Sourcing
+          "#818cf8", // Supplier Qual
+          "#c084fc", // Sample
+          "#34d399"  // Factory Handover
+        ]
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { boxWidth: 12, font: { size: 10 } } } } }
+  });
+}
+function renderPEPortfolioTable() {
+  const projectKeys = Object.keys(projectsConfig);
+  const listEl = $("peProjectExpandableList");
+  const countEl = $("peProjectCount");
+  if (!listEl) return;
+
+  const loaded = projectKeys.filter(k => loadedProjectsData[k] && !loadedProjectsData[k].error);
+  if (loaded.length === 0) return;
+
+  // Pre-compute project-level stats so they serve both the summary AND the accordion rows
+  const projectStats = loaded.map(key => {
+    const pd = loadedProjectsData[key];
+    const parts = pd.parts || [];
+    const total   = parts.length;
+    const design  = parts.filter(p => p.designDone).length;
+    const pq      = parts.filter(p => p.pqDone).length;
+    const src     = parts.filter(p => p.srcDone).length;
+    const sq      = parts.filter(p => p.sqDone).length;
+    const samp    = parts.filter(p => p.sampDone).length;
+    const fac     = parts.filter(p => p.facDone).length;
+    const progress = total > 0 ? Math.round((design + pq + src + sq + samp + fac) / (total * 6) * 100) : 0;
+    return { key, pd, total, design, pq, src, sq, samp, fac, progress };
+  });
+
+  // Classify each project for the status summary
+  let openCount = 0, inProgressCount = 0, completedCount = 0, rejectedCount = 0;
+  projectStats.forEach(({ progress }) => {
+    if (progress === 100)   completedCount++;
+    else if (progress > 0)  inProgressCount++;
+    else                    openCount++;
+    // Future: increment rejectedCount when a rejected field is available in the data
+  });
+
+  // Render status summary into the header
+  if (countEl) {
+    countEl.innerHTML =
+      `<span style="font-size:12px; color:#6b7280; font-weight:normal;">` +
+      `Total: <strong style="color:#111827">${loaded.length}</strong>` +
+      ` &nbsp;|&nbsp; Open: <strong style="color:#374151">${openCount}</strong>` +
+      ` &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgressCount}</strong>` +
+      ` &nbsp;|&nbsp; Completed: <strong style="color:var(--success)">${completedCount}</strong>` +
+      ` &nbsp;|&nbsp; Rejected: <strong style="color:var(--danger)">${rejectedCount}</strong>` +
+      `</span>`;
+  }
+
+  listEl.innerHTML = projectStats.map(({ pd, total, design, pq, src, sq, samp, fac, progress }, i) => {
+    // All values come from precomputed projectStats — no recalculation needed
+    
+    return `<div class="expandable-item" id="exp-item-peProjectExpandableList-${i}">
+      <div class="expandable-header" onclick="toggleExpand('peProjectExpandableList', ${i})">
+        <span class="expandable-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </span>
+        ${pd.config.name}
+      </div>
+      <div class="expandable-content">
+        <div class="expandable-content-inner">
+          <table class="expandable-table">
+            <thead>
+              <tr>
+                <th style="width:14%">Total Parts</th>
+                <th style="width:14%">Design</th>
+                <th style="width:14%">Part Qual.</th>
+                <th style="width:14%">Sourcing</th>
+                <th style="width:14%">Supplier Qual.</th>
+                <th style="width:14%">Sample</th>
+                <th style="width:16%">Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${total}</td>
+                <td>${design}</td>
+                <td>${pq}</td>
+                <td>${src}</td>
+                <td>${sq}</td>
+                <td>${samp}</td>
+                <td>
+                  <div class="progress-container">
+                    <div class="progress-track-modern"><div class="progress-fill-modern" style="width:${progress}%"></div></div>
+                    <span class="progress-text-modern">${progress}%</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
 }
 let selectedProduct = null, categoryChart;
 function showProduct(id) {
@@ -235,7 +517,7 @@ async function loadExcelProject(projectKey, forceRefresh = false) {
   try {
     // If we have cached data and not forcing refresh, don't fetch again
     if (loadedProjectsData[projectKey] && !forceRefresh) {
-      return; 
+      return;
     }
 
     console.time(`${config.name} Fetch`);
@@ -261,7 +543,7 @@ async function loadExcelProject(projectKey, forceRefresh = false) {
     }
 
     if (!res.ok) throw new Error("Network response was not ok");
-    
+
     const lastModified = res.headers.get('Last-Modified');
     const arrayBuffer = await res.arrayBuffer();
     console.timeEnd(`${config.name} Fetch`);
@@ -272,28 +554,28 @@ async function loadExcelProject(projectKey, forceRefresh = false) {
     const sheet = workbook.Sheets[config.sheet];
     if (!sheet) throw new Error(`Sheet ${config.sheet} not found`);
     console.timeEnd(`${config.name} XLSX Parse`);
-    
+
     console.time(`${config.name} Data Processing`);
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
     const parsedData = parseTrackerSheet(rows, config);
-    
+
     // Parse maturity data from all sheets
     parsedData.maturityTable = parseMaturityTable(workbook);
-    
+
     // Extract exact readiness summary from sheets instead of relying solely on JS calculation
     const exactSummary = parseReadinessTable(workbook);
     if (exactSummary && exactSummary.length > 0) {
-        parsedData.summary = exactSummary;
+      parsedData.summary = exactSummary;
     }
-    
+
     // Extract exact overall stats (Tracked Parts, Overall Progress)
     parsedData.stats = parseOverallStats(workbook);
-    
+
     parsedData.lastModified = lastModified || new Date().toUTCString();
-    
+
     loadedProjectsData[projectKey] = parsedData;
     console.timeEnd(`${config.name} Data Processing`);
-    
+
     // Print total for user observation
     console.log(`${config.name} loaded successfully.`);
   } catch (e) {
@@ -491,7 +773,7 @@ function parseTrackerSheet(rows, config) {
 
   // Pre-compute O(1) lookup map
   const partMap = {};
-  for(let i=0; i<parts.length; i++) {
+  for (let i = 0; i < parts.length; i++) {
     partMap[parts[i].id.toString()] = parts[i];
   }
 
@@ -499,200 +781,200 @@ function parseTrackerSheet(rows, config) {
 }
 
 function parseMaturityTable(workbook) {
-    const maturityTable = [];
-    let found = false;
+  const maturityTable = [];
+  let found = false;
 
-    console.log(`[Maturity Parser] Searching workbook...`);
-    console.log(`[Maturity Parser] Sheets: ${workbook.SheetNames.join(', ')}`);
+  console.log(`[Maturity Parser] Searching workbook...`);
+  console.log(`[Maturity Parser] Sheets: ${workbook.SheetNames.join(', ')}`);
 
-    for (let sheetName of workbook.SheetNames) {
-        if (found) break;
-        console.log(`[Maturity Parser] Checking sheet: ${sheetName}`);
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+  for (let sheetName of workbook.SheetNames) {
+    if (found) break;
+    console.log(`[Maturity Parser] Checking sheet: ${sheetName}`);
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
 
-        const matTitleIdx = rows.findIndex(r => r && r.some(c => {
-            const txt = String(c).toUpperCase();
-            return txt.includes("MATURITY PROGRESS") || txt.includes("PARTS BY FUNCTION");
-        }));
+    const matTitleIdx = rows.findIndex(r => r && r.some(c => {
+      const txt = String(c).toUpperCase();
+      return txt.includes("MATURITY PROGRESS") || txt.includes("PARTS BY FUNCTION");
+    }));
 
-        if (matTitleIdx !== -1) {
-            console.log(`[Maturity Parser] Candidate maturity section found at row ${matTitleIdx} in sheet '${sheetName}'`);
-            found = true;
-            let headerIdx = -1;
-            for (let i = matTitleIdx; i < Math.min(matTitleIdx + 15, rows.length); i++) {
-                if (rows[i] && rows[i].some(c => {
-                    const t = String(c).trim().toUpperCase();
-                    return t === "GROUP" || t === "CATEGORY";
-                })) {
-                    headerIdx = i;
-                    break;
-                }
-            }
-
-            if (headerIdx !== -1) {
-                console.log(`[Maturity Parser] Header row: ${headerIdx}`);
-                const hdrs = rows[headerIdx].map(h => String(h).trim().toUpperCase());
-                const cGrp = hdrs.findIndex(h => h === "GROUP" || h === "CATEGORY");
-                const cMat = hdrs.findIndex(h => h.includes("90%"));
-                const cTot = hdrs.findIndex(h => h === "TOTAL" || h.includes("TOTAL"));
-                const cProg = hdrs.findIndex(h => h === "PROGRESS" || h.includes("PROGRESS") || h === "%");
-
-                let rowCount = 0;
-                for (let i = headerIdx + 1; i < rows.length; i++) {
-                    const r = rows[i];
-                    if (!r) continue;
-
-                    const groupRaw = r[cGrp];
-                    if (groupRaw === undefined || groupRaw === null || String(groupRaw).trim() === "") {
-                        // Stop if we hit 2 consecutive empty groups
-                        if (i < rows.length - 1) {
-                            const nextRow = rows[i + 1];
-                            if (!nextRow || nextRow[cGrp] === undefined || nextRow[cGrp] === null || String(nextRow[cGrp]).trim() === "") {
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
-                        continue;
-                    }
-
-                    const grpName = String(groupRaw).trim();
-                    const upperGrp = grpName.toUpperCase();
-                    if (upperGrp === "PART NUMBER" || upperGrp === "S.NO" || upperGrp.includes("PRIORITY ACTIONS") || upperGrp.startsWith("PRIORITY")) break;
-
-                    const m = cMat !== -1 && r[cMat] !== undefined && r[cMat] !== "" ? String(r[cMat]) : "-";
-                    const t = cTot !== -1 && r[cTot] !== undefined && r[cTot] !== "" ? String(r[cTot]) : "-";
-                    let pRaw = cProg !== -1 && r[cProg] !== undefined && r[cProg] !== "" ? r[cProg] : "-";
-
-                    let p = pRaw;
-
-                    if ((pRaw === "-" || pRaw === "") && m !== "-" && t !== "-") {
-                        const mNum = parseFloat(m);
-                        const tNum = parseFloat(t);
-                        if (!isNaN(mNum) && !isNaN(tNum) && tNum > 0) {
-                            p = Math.round((mNum / tNum) * 100) + "%";
-                        }
-                    } else if (typeof pRaw === 'number') {
-                        p = Math.round(pRaw * 100) + "%";
-                    } else if (typeof pRaw === 'string' && !pRaw.includes('%') && pRaw !== '-') {
-                        const num = parseFloat(pRaw);
-                        if (!isNaN(num) && num <= 1) {
-                            p = Math.round(num * 100) + "%";
-                        }
-                    }
-
-                    maturityTable.push({
-                        group: grpName,
-                        maturity: m,
-                        total: t,
-                        progress: p
-                    });
-                    rowCount++;
-                }
-                console.log(`[Maturity Parser] Data rows: ${rowCount}`);
-            } else {
-                console.warn(`[Maturity Parser] Could not find header row after title in sheet '${sheetName}'.`);
-            }
+    if (matTitleIdx !== -1) {
+      console.log(`[Maturity Parser] Candidate maturity section found at row ${matTitleIdx} in sheet '${sheetName}'`);
+      found = true;
+      let headerIdx = -1;
+      for (let i = matTitleIdx; i < Math.min(matTitleIdx + 15, rows.length); i++) {
+        if (rows[i] && rows[i].some(c => {
+          const t = String(c).trim().toUpperCase();
+          return t === "GROUP" || t === "CATEGORY";
+        })) {
+          headerIdx = i;
+          break;
         }
-    }
-    
-    if (!found) {
-        console.warn(`[Maturity Parser] Could not find section title in any sheet.`);
-    }
+      }
 
-    return maturityTable;
+      if (headerIdx !== -1) {
+        console.log(`[Maturity Parser] Header row: ${headerIdx}`);
+        const hdrs = rows[headerIdx].map(h => String(h).trim().toUpperCase());
+        const cGrp = hdrs.findIndex(h => h === "GROUP" || h === "CATEGORY");
+        const cMat = hdrs.findIndex(h => h.includes("90%"));
+        const cTot = hdrs.findIndex(h => h === "TOTAL" || h.includes("TOTAL"));
+        const cProg = hdrs.findIndex(h => h === "PROGRESS" || h.includes("PROGRESS") || h === "%");
+
+        let rowCount = 0;
+        for (let i = headerIdx + 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r) continue;
+
+          const groupRaw = r[cGrp];
+          if (groupRaw === undefined || groupRaw === null || String(groupRaw).trim() === "") {
+            // Stop if we hit 2 consecutive empty groups
+            if (i < rows.length - 1) {
+              const nextRow = rows[i + 1];
+              if (!nextRow || nextRow[cGrp] === undefined || nextRow[cGrp] === null || String(nextRow[cGrp]).trim() === "") {
+                break;
+              }
+            } else {
+              break;
+            }
+            continue;
+          }
+
+          const grpName = String(groupRaw).trim();
+          const upperGrp = grpName.toUpperCase();
+          if (upperGrp === "PART NUMBER" || upperGrp === "S.NO" || upperGrp.includes("PRIORITY ACTIONS") || upperGrp.startsWith("PRIORITY")) break;
+
+          const m = cMat !== -1 && r[cMat] !== undefined && r[cMat] !== "" ? String(r[cMat]) : "-";
+          const t = cTot !== -1 && r[cTot] !== undefined && r[cTot] !== "" ? String(r[cTot]) : "-";
+          let pRaw = cProg !== -1 && r[cProg] !== undefined && r[cProg] !== "" ? r[cProg] : "-";
+
+          let p = pRaw;
+
+          if ((pRaw === "-" || pRaw === "") && m !== "-" && t !== "-") {
+            const mNum = parseFloat(m);
+            const tNum = parseFloat(t);
+            if (!isNaN(mNum) && !isNaN(tNum) && tNum > 0) {
+              p = Math.round((mNum / tNum) * 100) + "%";
+            }
+          } else if (typeof pRaw === 'number') {
+            p = Math.round(pRaw * 100) + "%";
+          } else if (typeof pRaw === 'string' && !pRaw.includes('%') && pRaw !== '-') {
+            const num = parseFloat(pRaw);
+            if (!isNaN(num) && num <= 1) {
+              p = Math.round(num * 100) + "%";
+            }
+          }
+
+          maturityTable.push({
+            group: grpName,
+            maturity: m,
+            total: t,
+            progress: p
+          });
+          rowCount++;
+        }
+        console.log(`[Maturity Parser] Data rows: ${rowCount}`);
+      } else {
+        console.warn(`[Maturity Parser] Could not find header row after title in sheet '${sheetName}'.`);
+      }
+    }
+  }
+
+  if (!found) {
+    console.warn(`[Maturity Parser] Could not find section title in any sheet.`);
+  }
+
+  return maturityTable;
 }
 
 function parseReadinessTable(workbook) {
-    let summary = [];
-    let found = false;
-    for (let sheetName of workbook.SheetNames) {
-        if (found) break;
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+  let summary = [];
+  let found = false;
+  for (let sheetName of workbook.SheetNames) {
+    if (found) break;
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
 
-        const titleIdx = rows.findIndex(r => r && r.some(c => String(c).toUpperCase().includes("READINESS STAGE PROGRESS")));
-        if (titleIdx !== -1) {
-            found = true;
-            let headerIdx = -1;
-            for (let i = titleIdx; i < Math.min(titleIdx + 5, rows.length); i++) {
-                if (rows[i] && rows[i].some(c => String(c).toUpperCase().trim() === "READINESS STAGE" || String(c).toUpperCase().trim() === "COMPLETED")) {
-                    headerIdx = i;
-                    break;
-                }
-            }
-            if (headerIdx !== -1) {
-                const hdrs = rows[headerIdx].map(h => String(h).toUpperCase().trim());
-                const cStage = hdrs.findIndex(h => h.includes("STAGE"));
-                const cComp = hdrs.findIndex(h => h === "COMPLETED");
-                const cTot = hdrs.findIndex(h => h === "TOTAL");
-
-                for (let i = headerIdx + 1; i < rows.length; i++) {
-                    const r = rows[i];
-                    if (!r) continue;
-                    
-                    const stageRaw = r[cStage];
-                    if (stageRaw === undefined || stageRaw === null || String(stageRaw).trim() === "") {
-                        if (i < rows.length - 1 && (!rows[i+1] || !rows[i+1][cStage])) break;
-                        continue;
-                    }
-                    
-                    const stage = String(stageRaw).trim();
-                    if (stage.toUpperCase().includes("PARTS BY FUNCTION") || stage.toUpperCase().includes("MATURITY") || stage.toUpperCase() === "GROUP") break;
-
-                    const comp = r[cComp] !== undefined ? r[cComp] : 0;
-                    const tot = r[cTot] !== undefined ? r[cTot] : 0;
-                    
-                    summary.push({
-                        stage: stage,
-                        completed: parseInt(comp) || 0,
-                        total: parseInt(tot) || 0
-                    });
-                }
-            }
+    const titleIdx = rows.findIndex(r => r && r.some(c => String(c).toUpperCase().includes("READINESS STAGE PROGRESS")));
+    if (titleIdx !== -1) {
+      found = true;
+      let headerIdx = -1;
+      for (let i = titleIdx; i < Math.min(titleIdx + 5, rows.length); i++) {
+        if (rows[i] && rows[i].some(c => String(c).toUpperCase().trim() === "READINESS STAGE" || String(c).toUpperCase().trim() === "COMPLETED")) {
+          headerIdx = i;
+          break;
         }
+      }
+      if (headerIdx !== -1) {
+        const hdrs = rows[headerIdx].map(h => String(h).toUpperCase().trim());
+        const cStage = hdrs.findIndex(h => h.includes("STAGE"));
+        const cComp = hdrs.findIndex(h => h === "COMPLETED");
+        const cTot = hdrs.findIndex(h => h === "TOTAL");
+
+        for (let i = headerIdx + 1; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r) continue;
+
+          const stageRaw = r[cStage];
+          if (stageRaw === undefined || stageRaw === null || String(stageRaw).trim() === "") {
+            if (i < rows.length - 1 && (!rows[i + 1] || !rows[i + 1][cStage])) break;
+            continue;
+          }
+
+          const stage = String(stageRaw).trim();
+          if (stage.toUpperCase().includes("PARTS BY FUNCTION") || stage.toUpperCase().includes("MATURITY") || stage.toUpperCase() === "GROUP") break;
+
+          const comp = r[cComp] !== undefined ? r[cComp] : 0;
+          const tot = r[cTot] !== undefined ? r[cTot] : 0;
+
+          summary.push({
+            stage: stage,
+            completed: parseInt(comp) || 0,
+            total: parseInt(tot) || 0
+          });
+        }
+      }
     }
-    return summary;
+  }
+  return summary;
 }
 
 function parseOverallStats(workbook) {
-    let stats = { totalParts: null, overallProgress: null };
-    for (let sheetName of workbook.SheetNames) {
-        if (stats.totalParts !== null) break;
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-        
-        for (let i = 0; i < Math.min(30, rows.length); i++) {
-            const r = rows[i];
-            if (!r) continue;
-            
-            const cOv = r.findIndex(c => String(c).toUpperCase().trim() === "OVERALL PROGRESS");
-            const cTr = r.findIndex(c => String(c).toUpperCase().trim() === "TRACKED PARTS");
-            
-            if (cOv !== -1 && cTr !== -1 && i + 1 < rows.length) {
-                const dataRow = rows[i+1];
-                let prog = dataRow[cOv];
-                let tot = dataRow[cTr];
-                
-                if (typeof prog === 'number') {
-                    stats.overallProgress = Math.round(prog * 100);
-                } else if (typeof prog === 'string' && !prog.includes('%') && prog !== '') {
-                    const num = parseFloat(prog);
-                    if (!isNaN(num) && num <= 1) stats.overallProgress = Math.round(num * 100);
-                }
-                
-                if (typeof tot === 'number') {
-                    stats.totalParts = tot;
-                } else if (typeof tot === 'string' && tot !== '') {
-                    const num = parseInt(tot, 10);
-                    if (!isNaN(num)) stats.totalParts = num;
-                }
-                break;
-            }
+  let stats = { totalParts: null, overallProgress: null };
+  for (let sheetName of workbook.SheetNames) {
+    if (stats.totalParts !== null) break;
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+    for (let i = 0; i < Math.min(30, rows.length); i++) {
+      const r = rows[i];
+      if (!r) continue;
+
+      const cOv = r.findIndex(c => String(c).toUpperCase().trim() === "OVERALL PROGRESS");
+      const cTr = r.findIndex(c => String(c).toUpperCase().trim() === "TRACKED PARTS");
+
+      if (cOv !== -1 && cTr !== -1 && i + 1 < rows.length) {
+        const dataRow = rows[i + 1];
+        let prog = dataRow[cOv];
+        let tot = dataRow[cTr];
+
+        if (typeof prog === 'number') {
+          stats.overallProgress = Math.round(prog * 100);
+        } else if (typeof prog === 'string' && !prog.includes('%') && prog !== '') {
+          const num = parseFloat(prog);
+          if (!isNaN(num) && num <= 1) stats.overallProgress = Math.round(num * 100);
         }
+
+        if (typeof tot === 'number') {
+          stats.totalParts = tot;
+        } else if (typeof tot === 'string' && tot !== '') {
+          const num = parseInt(tot, 10);
+          if (!isNaN(num)) stats.totalParts = num;
+        }
+        break;
+      }
     }
-    return stats;
+  }
+  return stats;
 }
 
 function formatExcelDate(val) {
@@ -713,6 +995,7 @@ async function initPartQualification(forceRefresh = false) {
   ['fishFeeder', 'nurseryFeeder'].forEach(key => {
     loadExcelProject(key, forceRefresh).then(() => {
       refreshActivePQView();
+      if (typeof renderPEOverviewChart === 'function') renderPEOverviewChart();
     });
   });
 
@@ -722,6 +1005,7 @@ async function initPartQualification(forceRefresh = false) {
       ['fishFeeder', 'nurseryFeeder'].forEach(key => {
         loadExcelProject(key, true).then(() => {
           refreshActivePQView();
+          if (typeof renderPEOverviewChart === 'function') renderPEOverviewChart();
         });
       });
     }, 60000);
@@ -731,7 +1015,7 @@ async function initPartQualification(forceRefresh = false) {
 function refreshActivePQView() {
   const v = $("partQualificationView");
   if (!v || !v.classList.contains("active")) return;
-  
+
   if (currentSelectedProject) {
     renderPQDetailView(currentSelectedProject);
     const partSelect = $("partSelect");
@@ -767,7 +1051,7 @@ function renderPQMainView() {
   ['fishFeeder', 'nurseryFeeder'].forEach(key => {
     const config = projectsConfig[key];
     const pd = loadedProjectsData[key];
-    
+
     if (!pd) {
       // Loading state
       html += `
@@ -789,10 +1073,10 @@ function renderPQMainView() {
       `;
       return;
     }
-    
+
     if (pd.error) {
-       // Error state
-       html += `
+      // Error state
+      html += `
             <div class="panel project-card">
                 <div class="panel-header">
                     <div>
@@ -808,14 +1092,14 @@ function renderPQMainView() {
                 </div>
             </div>
        `;
-       return;
+      return;
     }
 
     const total = (pd.stats && pd.stats.totalParts !== null) ? pd.stats.totalParts : pd.parts.length;
     let ovrPct = 0;
-    
+
     if (pd.stats && pd.stats.overallProgress !== null) {
-        ovrPct = pd.stats.overallProgress;
+      ovrPct = pd.stats.overallProgress;
     } else if (total > 0) {
       let totalStages = total * 6;
       let compStages = pd.summary.reduce((a, b) => a + b.completed, 0);
@@ -869,8 +1153,11 @@ window.handleTopDropdown = function (val) {
   }
 };
 
+let currentlyOpenPartId = null;
+
 window.openProjectDetail = function (projectKey) {
   currentSelectedProject = projectKey;
+  currentlyOpenPartId = null;
   renderPQDetailView(projectKey);
 };
 
@@ -923,30 +1210,34 @@ function renderPQDetailView(projectKey) {
             ${renderMaturityProgressTable(pd.maturityTable)}
         </div>
         
-        <div class="part-details-selector">
-            <strong style="color: #10243f;">Part Details:</strong>
-            <select id="partSelect" onchange="renderPartDetails(this.value)">
-                <option value="">Select a part...</option>
+        <div class="part-details-accordion" style="margin-top: 30px;">
+            <h3 style="color:#10243f; margin-bottom:15px; font-size:18px;">Part Details List</h3>
+            <div id="partAccordionList" style="display:flex; flex-direction:column; gap:10px;">
                 ${pd.parts.map(p => {
     const disp = p.partDesc && p.partDesc !== '-' ? p.partDesc : p.partNumber;
-    return `<option value="${p.id}">${disp}</option>`;
+    return `
+                    <div class="part-accordion-item" style="border: 1px solid var(--border); border-radius: 8px; background: #fff; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div class="part-accordion-header" id="part-header-${p.id}" onclick="togglePartDetails(${p.id})" style="padding: 16px 20px; cursor: pointer; background: #f9fafb; font-weight: 600; color: #111827; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s;">
+                            <span>${p.partNumber} - ${disp}</span>
+                            <span id="part-icon-${p.id}" style="color: #6b7280; font-size: 12px;">▼</span>
+                        </div>
+                        <div id="part-content-${p.id}" style="display: none; padding: 24px; border-top: 1px solid var(--border);"></div>
+                    </div>
+                    `;
   }).join("")}
-            </select>
-        </div>
-        <div id="partDetailsContainer" style="padding: 40px; text-align: center; color: #6b7280; background: #fff; border-radius: 12px; border: 1px solid var(--border);">
-            Please select a part from the dropdown to view its details.
+            </div>
         </div>
     `;
 
-    v.innerHTML = html;
+  v.innerHTML = html;
 }
 
 function renderMaturityProgressTable(maturityTable) {
-    if (!maturityTable || maturityTable.length === 0) {
-        return `<div class="panel" style="margin-bottom:0; height:100%; display:flex; align-items:center; justify-content:center; color:#6b7280; padding:40px;">No Maturity Data Found</div>`;
-    }
+  if (!maturityTable || maturityTable.length === 0) {
+    return `<div class="panel" style="margin-bottom:0; height:100%; display:flex; align-items:center; justify-content:center; color:#6b7280; padding:40px;">No Maturity Data Found</div>`;
+  }
 
-    let html = `
+  let html = `
         <div class="panel" style="margin-bottom:0; height: 100%;">
             <div class="panel-header"><div><h3 style="text-transform: uppercase;">PARTS BY FUNCTION & CATEGORY — MATURITY PROGRESS</h3></div></div>
             <div class="table-scroll">
@@ -962,12 +1253,12 @@ function renderMaturityProgressTable(maturityTable) {
                     <tbody>
     `;
 
-    maturityTable.forEach(row => {
-        const isMainGroup = ["ALL PARTS", "MECH", "HW", "FUNCTION NOT SPECIFIED"].includes(row.group.toUpperCase()) || (!row.group.includes("-") && row.group.toUpperCase() === row.group);
-        const trStyle = isMainGroup ? `background:#f9fafb; font-weight:600; color:#111827;` : ``;
-        const tdPadding = isMainGroup ? `padding-left:16px;` : `padding-left:32px; color:#4b5563;`;
+  maturityTable.forEach(row => {
+    const isMainGroup = ["ALL PARTS", "MECH", "HW", "FUNCTION NOT SPECIFIED"].includes(row.group.toUpperCase()) || (!row.group.includes("-") && row.group.toUpperCase() === row.group);
+    const trStyle = isMainGroup ? `background:#f9fafb; font-weight:600; color:#111827;` : ``;
+    const tdPadding = isMainGroup ? `padding-left:16px;` : `padding-left:32px; color:#4b5563;`;
 
-        html += `
+    html += `
             <tr style="${trStyle}">
                 <td style="${tdPadding}">${row.group}</td>
                 <td style="text-align:center;">${row.maturity}</td>
@@ -975,38 +1266,46 @@ function renderMaturityProgressTable(maturityTable) {
                 <td style="text-align:center; font-weight:500; color:#1769e0;">${row.progress}</td>
             </tr>
         `;
-    });
+  });
 
-    html += `
+  html += `
                     </tbody>
                 </table>
             </div>
         </div>
     `;
-    return html;
+  return html;
 }
 
-window.renderPartDetails = function (id) {
-  const container = $("partDetailsContainer");
-  if (!id || !currentSelectedProject) {
-    container.innerHTML = `Please select a part from the dropdown to view its details.`;
-    container.style.padding = "40px";
-    container.style.textAlign = "center";
-    container.style.background = "#fff";
-    container.style.border = "1px solid var(--border)";
+window.togglePartDetails = function (id) {
+  if (!id || !currentSelectedProject) return;
+
+  // If clicking the currently open one, close it
+  if (currentlyOpenPartId === id) {
+    document.getElementById(`part-content-${id}`).style.display = 'none';
+    document.getElementById(`part-icon-${id}`).textContent = '▼';
+    document.getElementById(`part-header-${id}`).style.background = '#f9fafb';
+    currentlyOpenPartId = null;
     return;
+  }
+
+  // Close previously open one
+  if (currentlyOpenPartId !== null) {
+    const prevContent = document.getElementById(`part-content-${currentlyOpenPartId}`);
+    if (prevContent) {
+      prevContent.style.display = 'none';
+      prevContent.innerHTML = ''; // free memory
+      document.getElementById(`part-icon-${currentlyOpenPartId}`).textContent = '▼';
+      document.getElementById(`part-header-${currentlyOpenPartId}`).style.background = '#f9fafb';
+    }
   }
 
   const pd = loadedProjectsData[currentSelectedProject];
   const data = pd.partMap[id.toString()];
   if (!data) return;
 
-  container.style.padding = "0";
-  container.style.textAlign = "left";
-  container.style.background = "transparent";
-  container.style.border = "none";
-
-  container.innerHTML = `
+  // Generate HTML for details
+  let detailsHTML = `
         <div class="table-scroll" style="margin-bottom: 24px; border-radius: 8px; border: 1px solid var(--border); background: #fff;">
             <table style="width: 100%; border-collapse: collapse; text-align: left;">
                 <thead>
@@ -1051,6 +1350,13 @@ window.renderPartDetails = function (id) {
             `).join("")}
         </div>
     `;
+
+  currentlyOpenPartId = id;
+  const contentDiv = document.getElementById(`part-content-${id}`);
+  contentDiv.innerHTML = detailsHTML;
+  contentDiv.style.display = 'block';
+  document.getElementById(`part-icon-${id}`).textContent = '▲';
+  document.getElementById(`part-header-${id}`).style.background = '#eff6ff';
 };
 
 function renderPartQualificationPage() {
