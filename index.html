@@ -58,7 +58,7 @@
     <main class="main">
       <header class="topbar">
         <div class="topbar-title-area">
-          <h1 class="main-dashboard-title">Verification &amp; Validation and Product Engineering DashBoard</h1>
+          <h1 class="main-dashboard-title">Verification &amp; Validation and Product Engineering Dashboard</h1>
         </div>
         <div class="topbar-logo-area">
           <img src="assets/eruvaka_logo_transparent.png" alt="Eruvaka">
@@ -76,17 +76,18 @@
         <div class="page-intro">
           <div>
             <h2>Overall Overview</h2>
-            <p>Unified validation status across Products, Sourcing, Field Issues, Quality and R&amp;D.</p>
           </div>
         </div>
-        <div class="kpi-grid" id="overviewKpis"></div>
 
         <div class="two-column">
-          <div>
+          <div class="overview-navigation-card" role="button" tabindex="0"
+            aria-label="Open Validation Portfolio" aria-controls="validationPortfolioView"
+            data-destination-view="validationPortfolio">
             <div class="section-heading" style="margin-top: 0; margin-bottom: 15px;">
               <div>
                 <h2>VERIFICATION &amp; VALIDATION</h2>
               </div>
+              <span class="overview-navigation-hint">Click to view details ↓</span>
             </div>
             <div class="panel">
               <div class="panel-header">
@@ -99,11 +100,14 @@
             </div>
           </div>
 
-          <div>
+          <div class="overview-navigation-card" role="button" tabindex="0"
+            aria-label="Open Product Portfolio" aria-controls="productPortfolioView"
+            data-destination-view="productPortfolio">
             <div class="section-heading" style="margin-top: 0; margin-bottom: 15px;">
               <div>
                 <h2>PRODUCT ENGINEERING</h2>
               </div>
+              <span class="overview-navigation-hint">Click to view details ↓</span>
             </div>
             <div class="panel">
               <div class="panel-header">
@@ -120,13 +124,16 @@
           </div>
         </div>
 
-        <div class="section-heading">
+      </section>
+
+      <section id="validationPortfolioView" class="view">
+        <div class="page-intro">
           <div>
             <h2>Validation Portfolio</h2>
             <p>Every validation area is displayed using the same test-case metrics.</p>
           </div>
+          <button type="button" class="back-link" id="validationPortfolioBackToOverview">Back to Overview →</button>
         </div>
-
         <div class="area-section products-section">
           <div class="panel products-card">
             <div class="area-title">
@@ -242,13 +249,16 @@
           </div>
         </div>
 
-        <div class="section-heading">
+      </section>
+
+      <section id="productPortfolioView" class="view">
+        <div class="page-intro">
           <div>
             <h2>Product Portfolio</h2>
             <p>Every product engineering project is displayed with readiness stage progress.</p>
           </div>
+          <button type="button" class="back-link" id="productPortfolioBackToOverview">Back to Overview →</button>
         </div>
-
         <div class="area-section portfolio-summary-section">
           <div class="panel portfolio-summary-card">
             <div class="area-title">

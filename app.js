@@ -82,8 +82,6 @@ function overall() {
   return allItems().reduce((a, x) => { const m = metrics(x); a.items++; a.tests += m.tests; a.executed += m.executed; a.pass += m.pass; a.fail += m.fail; a.blocked += m.blocked; return a }, { items: 0, tests: 0, executed: 0, pass: 0, fail: 0, blocked: 0 });
 }
 function renderOverview() {
-  renderOverviewKpis();
-
   renderExpandableList(products, "productsExpandableList", null, "productsStatusSummary");
   renderExpandableList(areaData.sourcing, "sourcingExpandableList", null, "sourcingStatusSummary");
   renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", null, "fieldIssuesStatusSummary");
@@ -97,58 +95,8 @@ function renderOverview() {
     loadExcelProject(key).then(() => {
       renderPEOverviewChart();
       renderPEPortfolioTable();
-      renderOverviewKpis(); // refresh combined totals now that PE data is available
     });
   });
-}
-
-/**
- * Calculates and renders the five Overall Overview KPI cards.
- * Combines V&V item statuses (from allItems()) with PE project statuses
- * (from loadedProjectsData) so the cards always reflect both areas.
- * Called once on initial render, and again each time a PE project loads.
- */
-function renderOverviewKpis() {
-  // --- V&V counts: use the same status-string logic as every Validation Portfolio section ---
-  const vvItems = allItems();
-  let vvTotal = vvItems.length, vvOpen = 0, vvInProgress = 0, vvComplete = 0, vvRejects = 0;
-  vvItems.forEach(x => {
-    const st = (x.status || "").toLowerCase();
-    if (st.includes("open"))                              vvOpen++;
-    else if (st.includes("progress") || st.includes("in validation")) vvInProgress++;
-    else if (st.includes("complete"))                     vvComplete++;
-    else if (st.includes("reject"))                       vvRejects++;
-  });
-
-  // --- PE counts: mirror the exact progress logic used in renderPEPortfolioTable() ---
-  let peTotal = 0, peOpen = 0, peInProgress = 0, peComplete = 0, peRejects = 0;
-  Object.keys(projectsConfig).forEach(key => {
-    const pd = loadedProjectsData[key];
-    if (!pd || pd.error) return; // project not yet loaded or failed
-    const parts = pd.parts || [];
-    const total  = parts.length;
-    const design = parts.filter(p => p.designDone).length;
-    const pq     = parts.filter(p => p.pqDone).length;
-    const src    = parts.filter(p => p.srcDone).length;
-    const sq     = parts.filter(p => p.sqDone).length;
-    const samp   = parts.filter(p => p.sampDone).length;
-    const fac    = parts.filter(p => p.facDone).length;
-    const progress = total > 0 ? Math.round((design + pq + src + sq + samp + fac) / (total * 6) * 100) : 0;
-    peTotal++;
-    if (progress === 100)      peComplete++;
-    else if (progress > 0)     peInProgress++;
-    else                       peOpen++;
-    // Future: peRejects++ when a rejected field is added to PE data
-  });
-
-  // --- Combined totals (no double-counting: V&V items ≠ PE projects) ---
-  $("overviewKpis").innerHTML = [
-    kpi("Total",       vvTotal + peTotal,       ""),
-    kpi("Open",        vvOpen + peOpen,          ""),
-    kpi("In Progress", vvInProgress + peInProgress, ""),
-    kpi("Completed",   vvComplete + peComplete,  ""),
-    kpi("Rejected",    vvRejects + peRejects,    "")
-  ].join("");
 }
 
 function renderProductsPage() {
@@ -480,7 +428,8 @@ function showView(v) {
   document.querySelectorAll(".view").forEach(x => x.classList.remove("active"));
   const el = $(v + "View");
   if (el) el.classList.add("active");
-  document.querySelectorAll(".nav-item").forEach(x => x.classList.toggle("active", x.dataset.view === v));
+  const activeNavView = ["validationPortfolio", "productPortfolio"].includes(v) ? "overview" : v;
+  document.querySelectorAll(".nav-item").forEach(x => x.classList.toggle("active", x.dataset.view === activeNavView));
 }
 function renderModuleLanding(areaKey, title) {
   const items = areaData[areaKey], viewId = areaKey === "fieldIssues" ? "fieldIssues" : areaKey;
@@ -1029,6 +978,15 @@ function refreshActivePQView() {
 }
 
 function renderPQMainView() {
+  if (window.readinessStageChart) {
+    window.readinessStageChart.destroy();
+    window.readinessStageChart = null;
+  }
+  if (window.maturityGroupCharts) {
+    window.maturityGroupCharts.forEach(chart => chart.destroy());
+    window.maturityGroupCharts = [];
+  }
+
   currentSelectedProject = null;
   const v = $("partQualificationView");
   if (!v.classList.contains("active")) return;
@@ -1168,6 +1126,10 @@ function renderPQDetailView(projectKey) {
   const v = $("partQualificationView");
   const pd = loadedProjectsData[projectKey];
   if (!pd) return;
+  if (window.readinessStageChart) {
+    window.readinessStageChart.destroy();
+    window.readinessStageChart = null;
+  }
 
   let html = `
         <div class="page-intro" style="display:flex; justify-content:space-between; align-items:center;">
@@ -1184,20 +1146,11 @@ function renderPQDetailView(projectKey) {
             </div>
         </div>
         
-        <style>
-          .pq-dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 24px;
-            margin-bottom: 24px;
-            align-items: start;
-          }
-        </style>
-
         <div class="pq-dashboard-grid">
-            <div class="panel" style="margin-bottom:0; height:100%;">
+            <section class="panel readiness-dashboard">
                 <div class="panel-header"><div><h3>READINESS STAGE PROGRESS</h3></div></div>
-                <div class="table-scroll">
+                <div class="readiness-dashboard-columns">
+                  <div class="readiness-stage-table-wrap">
                     <table>
                         <thead><tr><th>Readiness Stage</th><th>Completed</th><th>Total</th><th>Progress</th></tr></thead>
                         <tbody>
@@ -1207,8 +1160,15 @@ function renderPQDetailView(projectKey) {
   }).join("")}
                         </tbody>
                     </table>
+                  </div>
+                  <div class="readiness-distribution">
+                    <h4>Readiness Stage Distribution</h4>
+                    <div class="readiness-chart-wrap">
+                      <canvas id="readinessStageChart" aria-label="Readiness Stage Distribution doughnut chart"></canvas>
+                    </div>
+                  </div>
                 </div>
-            </div>
+            </section>
 
             ${renderMaturityProgressTable(pd.maturityTable)}
         </div>
@@ -1233,51 +1193,193 @@ function renderPQDetailView(projectKey) {
     `;
 
   v.innerHTML = html;
+  renderMaturityGroupCharts(pd.maturityTable || []);
+  const readinessStageColors = {
+    "Design Readiness": "#fcd34d",
+    "Part Qualification": "#fb923c",
+    "Sourcing Readiness": "#60a5fa",
+    "Supplier Qualification": "#818cf8",
+    "Sample / Lot Procurement": "#c084fc",
+    "Factory Handover": "#34d399"
+  };
+  const readinessTotal = pd.summary.reduce((total, row) => total + row.completed, 0);
+  window.readinessStageChart = new Chart($("readinessStageChart"), {
+    type: "doughnut",
+    data: {
+      labels: pd.summary.map(row => row.stage),
+      datasets: [{
+        data: pd.summary.map(row => row.completed),
+        backgroundColor: pd.summary.map(row => readinessStageColors[row.stage] || "#94a3b8"),
+        borderColor: "#fff",
+        borderWidth: 3,
+        hoverOffset: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "64%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { boxWidth: 11, boxHeight: 11, padding: 10, font: { size: 10 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: context => {
+              const value = Number(context.raw) || 0;
+              const percentage = readinessTotal ? Math.round(value / readinessTotal * 100) : 0;
+              return `${context.label}: ${value} completed (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function getMaturityGroupData(maturityTable) {
+  const groupNames = ["ALL PARTS", "MECH", "HW", "FUNCTION NOT SPECIFIED"];
+  const characteristicNames = [
+    "NEW - CRITICAL",
+    "NEW - REGULAR",
+    "CARRYOVER - CRITICAL",
+    "CARRYOVER - REGULAR",
+    "NOT SPECIFIED"
+  ];
+  const groupRows = groupNames
+    .map(name => ({ name, index: maturityTable.findIndex(row => row.group.trim().toUpperCase() === name) }))
+    .filter(group => group.index !== -1);
+
+  const toCount = value => {
+    const count = Number.parseFloat(String(value).replace(/,/g, ""));
+    return Number.isFinite(count) ? count : 0;
+  };
+
+  return groupRows.map(group => {
+    const nextGroupIndex = groupRows
+      .filter(candidate => candidate.index > group.index)
+      .reduce((nextIndex, candidate) => Math.min(nextIndex, candidate.index), maturityTable.length);
+    const summary = maturityTable[group.index];
+    const characteristics = maturityTable
+      .slice(group.index + 1, nextGroupIndex)
+      .filter(row => characteristicNames.includes(row.group.trim().toUpperCase()));
+    const characteristicsByName = new Map(characteristics.map(row => [row.group.trim().toUpperCase(), row]));
+
+    return {
+      name: group.name,
+      summary,
+      mature: toCount(summary.maturity),
+      total: toCount(summary.total),
+      characteristics: characteristicNames.map(name => characteristicsByName.get(name) || {
+        group: name.split(" ").map(word => word[0] + word.slice(1).toLowerCase()).join(" "),
+        maturity: "—",
+        total: "—",
+        progress: "—"
+      }),
+      hasData: toCount(summary.maturity) > 0 || toCount(summary.total) > 0
+    };
+  });
 }
 
 function renderMaturityProgressTable(maturityTable) {
+  if (window.maturityGroupCharts) {
+    window.maturityGroupCharts.forEach(chart => chart.destroy());
+  }
+  window.maturityGroupCharts = [];
+
   if (!maturityTable || maturityTable.length === 0) {
     return `<div class="panel" style="margin-bottom:0; height:100%; display:flex; align-items:center; justify-content:center; color:#6b7280; padding:40px;">No Maturity Data Found</div>`;
   }
 
-  let html = `
-        <div class="panel" style="margin-bottom:0; height: 100%;">
-            <div class="panel-header"><div><h3 style="text-transform: uppercase;">PARTS BY FUNCTION & CATEGORY — MATURITY PROGRESS</h3></div></div>
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="text-align:left;">Group</th>
-                            <th style="text-align:center;">&ge;90% Maturity</th>
-                            <th style="text-align:center;">Total</th>
-                            <th style="text-align:center;">Progress</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-    `;
-
-  maturityTable.forEach(row => {
-    const isMainGroup = ["ALL PARTS", "MECH", "HW", "FUNCTION NOT SPECIFIED"].includes(row.group.toUpperCase()) || (!row.group.includes("-") && row.group.toUpperCase() === row.group);
-    const trStyle = isMainGroup ? `background:#f9fafb; font-weight:600; color:#111827;` : ``;
-    const tdPadding = isMainGroup ? `padding-left:16px;` : `padding-left:32px; color:#4b5563;`;
-
-    html += `
-            <tr style="${trStyle}">
-                <td style="${tdPadding}">${row.group}</td>
-                <td style="text-align:center;">${row.maturity}</td>
-                <td style="text-align:center;">${row.total}</td>
-                <td style="text-align:center; font-weight:500; color:#1769e0;">${row.progress}</td>
-            </tr>
-        `;
-  });
-
-  html += `
-                    </tbody>
-                </table>
+  const groups = getMaturityGroupData(maturityTable);
+  const chartGroups = groups.filter(group => ["ALL PARTS", "MECH", "HW"].includes(group.name) && group.hasData);
+  const functionNotSpecified = groups.find(group => group.name === "FUNCTION NOT SPECIFIED" && group.hasData);
+  const groupCards = chartGroups.map((group, index) => {
+    const chartId = `maturityGroupChart${index}`;
+    const progress = group.total ? Math.round(group.mature / group.total * 100) : 0;
+    return `<section class="maturity-group-card">
+        <h4 class="maturity-group-title">${group.name}</h4>
+        <div class="maturity-group-layout">
+          <div class="maturity-characteristic-table">
+            <table>
+              <thead><tr><th>Characteristic</th><th>≥90% Maturity</th><th>Total</th><th>Progress</th></tr></thead>
+              <tbody>
+                ${group.characteristics.map(row => `<tr>
+                  <td>${row.group}</td>
+                  <td>${row.maturity}</td>
+                  <td>${row.total}</td>
+                  <td>${row.progress}</td>
+                </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+          <div class="maturity-donut-panel">
+            <div class="maturity-donut-wrap">
+              <canvas id="${chartId}" aria-label="${group.name} maturity distribution doughnut chart"></canvas>
+              <div class="maturity-donut-center"><strong>${progress}%</strong><span>Maturity</span></div>
             </div>
+            <p class="maturity-donut-value">${group.mature} / ${group.total} at ≥90% maturity</p>
+            <div class="maturity-chart-legend">
+              <span><i class="maturity-legend-complete"></i>≥90% Maturity</span>
+              <span><i class="maturity-legend-remaining"></i>Below 90%</span>
+            </div>
+          </div>
         </div>
+      </section>`;
+  }).join("");
+
+  const functionNotSpecifiedHtml = functionNotSpecified
+    ? `<div class="maturity-unspecified-summary"><strong>FUNCTION NOT SPECIFIED</strong><span>${functionNotSpecified.mature} of ${functionNotSpecified.total} at ≥90% maturity</span><span>${functionNotSpecified.summary.progress}</span></div>`
+    : "";
+
+  return `
+        <section class="maturity-dashboard">
+          <div class="panel-header maturity-dashboard-title"><div><h3>PARTS BY FUNCTION &amp; CATEGORY — MATURITY PROGRESS</h3></div></div>
+          <div class="maturity-group-list">
+            ${groupCards || `<div class="panel maturity-no-data">No group maturity data available.</div>`}
+            ${functionNotSpecifiedHtml}
+          </div>
+        </section>
     `;
-  return html;
+}
+
+function renderMaturityGroupCharts(maturityTable) {
+  const groups = getMaturityGroupData(maturityTable)
+    .filter(group => ["ALL PARTS", "MECH", "HW"].includes(group.name) && group.hasData);
+
+  window.maturityGroupCharts = groups.map((group, index) => {
+    const belowNinety = Math.max(group.total - group.mature, 0);
+    const canvas = $(`maturityGroupChart${index}`);
+    if (!canvas) throw new Error(`Missing maturity chart canvas for ${group.name}.`);
+
+    return new Chart(canvas, {
+      type: "doughnut",
+      data: {
+        labels: ["≥90% Maturity", "Below 90%"],
+        datasets: [{
+          data: [group.mature, belowNinety],
+          backgroundColor: ["#1769e0", "#e5eef2"],
+          borderColor: "#fff",
+          borderWidth: 2,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "68%",
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: context => `${context.label}: ${context.raw}`
+            }
+          }
+        }
+      }
+    });
+  });
 }
 
 window.togglePartDetails = function (id) {
@@ -1375,5 +1477,38 @@ function renderPartQualificationPage() {
 
 $("backToOverview").onclick = () => { selectedProduct = null; showView("overview"); $("breadcrumb").textContent = "Dashboard / Overview"; $("pageTitle").textContent = "V&V Overview" };
 $("productsBackToOverview").onclick = () => { showView("overview"); $("breadcrumb").textContent = "Dashboard / Overview"; $("pageTitle").textContent = "V&V Overview" };
+$("validationPortfolioBackToOverview").onclick = () => {
+  showView("overview");
+  $("breadcrumb").textContent = "Dashboard / Overview";
+  $("pageTitle").textContent = "V&V Overview";
+};
+$("productPortfolioBackToOverview").onclick = () => {
+  showView("overview");
+  $("breadcrumb").textContent = "Dashboard / Overview";
+  $("pageTitle").textContent = "V&V Overview";
+};
 $("resetBtn").onclick = () => location.reload();
+document.querySelectorAll(".overview-navigation-card").forEach(card => {
+  const navigateToPortfolio = () => {
+    const destinationView = card.dataset.destinationView;
+    const titles = {
+      validationPortfolio: "Validation Portfolio",
+      productPortfolio: "Product Portfolio"
+    };
+    if (!titles[destinationView]) return;
+
+    showView(destinationView);
+    $("breadcrumb").textContent = `Dashboard / ${titles[destinationView]}`;
+    $("pageTitle").textContent = titles[destinationView];
+    window.scrollTo(0, 0);
+  };
+
+  card.onclick = navigateToPortfolio;
+  card.onkeydown = event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      navigateToPortfolio();
+    }
+  };
+});
 renderOverview();
