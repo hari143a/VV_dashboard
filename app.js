@@ -455,8 +455,8 @@ document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => {
 });
 
 const projectsConfig = {
-  fishFeeder: { id: "fishFeeder", name: "Fish Feeder 2026", file: "excel files/Part_Qualification_FF_Tracker_2026.xlsx", sheet: "FF_2026" },
-  nurseryFeeder: { id: "nurseryFeeder", name: "Nursery Feeder 2026", file: "excel files/Part_Qualification_NF_Tracker_2026.xlsx", sheet: "NF_2026" }
+  fishFeeder: { id: "fishFeeder", name: "Fish Feeder 2026", file: "excel files/Product engineer/Part_Qualification_FF_Tracker_2026.xlsx", sheet: "FF_2026" },
+  nurseryFeeder: { id: "nurseryFeeder", name: "Nursery Feeder 2026", file: "excel files/Product engineer/Part_Qualification_NF_Tracker_2026.xlsx", sheet: "NF_2026" }
 };
 
 let loadedProjectsData = {};
