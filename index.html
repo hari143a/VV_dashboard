@@ -44,6 +44,8 @@
             class="nav-icon">✓</span><span>Quality</span></button>
         <button type="button" class="nav-item" data-view="fieldIssues"><span class="nav-icon">⚗</span><span>Field
             Issues</span></button>
+        <button type="button" class="nav-item" data-view="rnd"><span class="nav-icon">💡</span><span>R&amp;D</span></button>
+        <button type="button" class="nav-item" data-view="nit"><span class="nav-icon">⚙</span><span>NIT</span></button>
 
         <div class="nav-section">
           <div class="nav-section-title">PRODUCT ENGINEERING</div>
@@ -127,6 +129,10 @@
       </section>
 
       <section id="validationPortfolioView" class="view">
+        <div class="section-heading validation-portfolio-overview-heading">
+          <h2>VERIFICATION &amp; VALIDATION overview</h2>
+        </div>
+        <div class="kpi-grid validation-status-kpis" id="validationPortfolioKpis"></div>
         <div class="page-intro">
           <div>
             <h2>Validation Portfolio</h2>
@@ -136,13 +142,16 @@
         </div>
         <div class="area-section products-section">
           <div class="panel products-card">
-            <div class="area-title">
-              <div><span class="area-icon products">▤</span>
-                <div>
+            <div class="area-title products-area-title">
+              <button type="button" class="section-accordion-toggle" id="productsSectionToggle"
+                aria-expanded="false" aria-controls="productsExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon products">▤</span>
+                <span class="section-accordion-copy">
                   <h3>Products</h3>
                   <p>Product and product validation activities.</p>
-                </div>
-              </div>
+                </span>
+              </button>
               <div id="productsStatusSummary" class="products-status-summary"></div>
             </div>
           <style>
@@ -170,82 +179,101 @@
             .status-badge.rejected { background-color: #fee2e2; color: #991b1b; }
             .status-badge.open { background-color: #f3f4f6; color: #374151; }
           </style>
-            <div id="productsExpandableList"></div>
+            <div class="section-accordion-content">
+              <div class="section-accordion-inner">
+                <div id="productsExpandableList"></div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="area-section portfolio-summary-section">
           <div class="panel portfolio-summary-card">
             <div class="area-title">
-              <div><span class="area-icon sourcing">🛒</span>
-                <div>
+              <button type="button" class="section-accordion-toggle" id="sourcingSectionToggle"
+                aria-expanded="false" aria-controls="sourcingExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon sourcing">🛒</span>
+                <span class="section-accordion-copy">
                   <h3>Sourcing</h3>
                   <p>Sourced components/items requiring validation.</p>
-                </div>
-              </div>
+                </span>
+              </button>
               <div id="sourcingStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div id="sourcingExpandableList"></div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="sourcingExpandableList"></div></div></div>
           </div>
         </div>
 
         <div class="area-section portfolio-summary-section">
           <div class="panel portfolio-summary-card">
             <div class="area-title">
-              <div><span class="area-icon field">⚠</span>
-                <div>
+              <button type="button" class="section-accordion-toggle" id="fieldIssuesSectionToggle"
+                aria-expanded="false" aria-controls="fieldIssuesExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon field">⚠</span>
+                <span class="section-accordion-copy">
                   <h3>Field Issues</h3>
                   <p>Field issues with corrective-action validation.</p>
-                </div>
-              </div>
+                </span>
+              </button>
               <div id="fieldIssuesStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div id="fieldIssuesExpandableList"></div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="fieldIssuesExpandableList"></div></div></div>
           </div>
         </div>
 
         <div class="area-section portfolio-summary-section">
           <div class="panel portfolio-summary-card">
             <div class="area-title">
-              <div><span class="area-icon quality">✓</span>
-                <div>
+              <button type="button" class="section-accordion-toggle" id="qualitySectionToggle"
+                aria-expanded="false" aria-controls="qualityExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon quality">✓</span>
+                <span class="section-accordion-copy">
                   <h3>Quality</h3>
                   <p>Quality verification and inspection activities.</p>
-                </div>
-              </div>
+                </span>
+              </button>
               <div id="qualityStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div id="qualityExpandableList"></div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="qualityExpandableList"></div></div></div>
           </div>
         </div>
 
         <div class="area-section portfolio-summary-section">
           <div class="panel portfolio-summary-card">
             <div class="area-title">
-              <div><span class="area-icon rnd">💡</span>
-                <div>
+              <button type="button" class="section-accordion-toggle" id="rndSectionToggle"
+                aria-expanded="false" aria-controls="rndExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon rnd">💡</span>
+                <span class="section-accordion-copy">
                   <h3>R&amp;D</h3>
                   <p>Research and development validation activities.</p>
-                </div>
-              </div>
+                </span>
+              </button>
               <div id="rndStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div id="rndExpandableList"></div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="rndExpandableList"></div></div></div>
           </div>
         </div>
 
         <div class="area-section portfolio-summary-section">
           <div class="panel portfolio-summary-card">
             <div class="area-title">
-              <div><span class="area-icon nit">⚙</span>
-                <div>
+              <button type="button" class="section-accordion-toggle" id="nitSectionToggle"
+                aria-expanded="false" aria-controls="nitExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon nit">⚙</span>
+                <span class="section-accordion-copy">
                   <h3>NIT</h3>
                   <p>New Item Testing validation activities.</p>
-                </div>
-              </div>
+                </span>
+              </button>
               <div id="nitStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div id="nitExpandableList"></div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="nitExpandableList"></div></div></div>
           </div>
         </div>
 
@@ -262,15 +290,18 @@
         <div class="area-section portfolio-summary-section">
           <div class="panel portfolio-summary-card">
             <div class="area-title">
-              <div><span class="area-icon nit">⚙</span>
-                <div>
+              <button type="button" class="section-accordion-toggle" id="peProjectSectionToggle"
+                aria-expanded="false" aria-controls="peProjectExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon nit">⚙</span>
+                <span class="section-accordion-copy">
                   <h3>Part Qualification</h3>
                   <p>Readiness stage progress across all Part Qualification projects.</p>
-                </div>
-              </div>
+                </span>
+              </button>
               <div id="peProjectStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div id="peProjectExpandableList"></div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="peProjectExpandableList"></div></div></div>
           </div>
         </div>
 

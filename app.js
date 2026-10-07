@@ -61,7 +61,7 @@ const products = [
 
 
 const $ = id => document.getElementById(id), pct = (a, b) => b ? Math.round(a / b * 100) : 0;
-const kpi = (l, v, n = "") => { const icons = { "Validation Items": "▤", "Test Cases": "☷", "Executed": "▶", "Passed": "✓", "Failed": "×", "Blocked": "!", "Overall Pass Rate": "◔", "Total Test Cases": "☷", "Pass Rate": "◔", "Total": "▤", "Open": "☷", "In Progress": "▶", "Completed": "✓", "Rejected": "×" }; const tone = { "Passed": "green", "Failed": "red", "Executed": "cyan", "Validation Items": "blue", "Test Cases": "green", "Overall Pass Rate": "blue", "Blocked": "purple", "Total Test Cases": "green", "Pass Rate": "blue", "Total": "blue", "Open": "green", "In Progress": "cyan", "Completed": "green", "Rejected": "red" }; return `<div class="kpi"><div class="kpi-icon ${tone[l] || "blue"}">${icons[l] || "•"}</div><div class="kpi-content"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div>${n ? `<div class="kpi-note">${n}</div>` : ""}</div></div>` };
+const kpi = (l, v, n = "") => { const icons = { "Validation Items": "▤", "Test Cases": "☷", "Executed": "▶", "Passed": "✓", "Failed": "×", "Blocked": "!", "Overall Pass Rate": "◔", "Total Test Cases": "☷", "Pass Rate": "◔", "Total": "▤", "Open": "☷", "In Progress": '<svg class="progress-status-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="progress-status-track" d="M3 12h18"/><path class="progress-status-line" d="M3 12h18"/></svg>', "Completed": "✓", "Rejected": "×" }; const tone = { "Passed": "green", "Failed": "red", "Executed": "cyan", "Validation Items": "blue", "Test Cases": "green", "Overall Pass Rate": "blue", "Blocked": "purple", "Total Test Cases": "green", "Pass Rate": "blue", "Total": "blue", "Open": "gray", "In Progress": "blue", "Completed": "green", "Rejected": "red" }; return `<div class="kpi"><div class="kpi-icon ${tone[l] || "blue"}">${icons[l] || "•"}</div><div class="kpi-content"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div>${n ? `<div class="kpi-note">${n}</div>` : ""}</div></div>` };
 const badge = s => `<span class="status status-${s.replaceAll(" ", "-")}">${s}</span>`;
 
 function metrics(item) {
@@ -82,7 +82,17 @@ function overall() {
   return allItems().reduce((a, x) => { const m = metrics(x); a.items++; a.tests += m.tests; a.executed += m.executed; a.pass += m.pass; a.fail += m.fail; a.blocked += m.blocked; return a }, { items: 0, tests: 0, executed: 0, pass: 0, fail: 0, blocked: 0 });
 }
 function renderOverview() {
+  renderValidationPortfolioKpis();
   renderExpandableList(products, "productsExpandableList", null, "productsStatusSummary");
+  [
+    "productsSectionToggle",
+    "sourcingSectionToggle",
+    "fieldIssuesSectionToggle",
+    "qualitySectionToggle",
+    "rndSectionToggle",
+    "nitSectionToggle",
+    "peProjectSectionToggle"
+  ].forEach(bindSectionAccordion);
   renderExpandableList(areaData.sourcing, "sourcingExpandableList", null, "sourcingStatusSummary");
   renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", null, "fieldIssuesStatusSummary");
   renderExpandableList(areaData.quality, "qualityExpandableList", null, "qualityStatusSummary");
@@ -99,13 +109,59 @@ function renderOverview() {
   });
 }
 
+function renderValidationPortfolioKpis() {
+  const kpiContainer = $("validationPortfolioKpis");
+  if (!kpiContainer) return;
+
+  const items = allItems();
+  const summary = items.reduce((counts, item) => {
+    const status = (item.status || "").toLowerCase();
+    counts.total++;
+    if (status.includes("open")) counts.open++;
+    else if (status.includes("progress") || status.includes("in validation")) counts.inProgress++;
+    else if (status.includes("complete")) counts.completed++;
+    else if (status.includes("reject")) counts.rejected++;
+    return counts;
+  }, { total: 0, open: 0, inProgress: 0, completed: 0, rejected: 0 });
+
+  kpiContainer.innerHTML = [
+    kpi("Total", summary.total),
+    kpi("Open", summary.open),
+    kpi("In Progress", summary.inProgress),
+    kpi("Completed", summary.completed),
+    kpi("Rejected", summary.rejected)
+  ].join("");
+}
+
+function bindSectionAccordion(toggleId) {
+  const toggle = $(toggleId);
+  if (!toggle) return;
+
+  toggle.onclick = () => {
+    const expanded = toggle.getAttribute("aria-expanded") !== "true";
+    if (expanded) {
+      const view = toggle.closest(".view");
+      view?.querySelectorAll('.section-accordion-toggle[aria-expanded="true"]').forEach(openToggle => {
+        if (openToggle === toggle) return;
+        openToggle.setAttribute("aria-expanded", "false");
+        openToggle.closest(".panel")?.classList.remove("is-expanded");
+      });
+    }
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.closest(".panel").classList.toggle("is-expanded", expanded);
+  };
+}
+
 function renderProductsPage() {
   $("productsPageCount").textContent = `${products.length} products`;
-  $("productsPageTable").innerHTML = products.map((x, i) => {
+  const tableBody = $("productsPageTable");
+  tableBody.innerHTML = products.map(x => {
     const m = metrics(x);
-    return `<tr><td><button class="product-link" data-product="${x.id}">${x.name}</button></td><td>${m.tests}</td><td>${m.executed}</td><td>${m.pass}</td><td>${m.fail}</td><td><div class="progress-track"><div class="progress-fill" style="width:${m.progress}%"></div></div><span class="progress-text">${m.progress}%</span></td><td>${badge(x.status)}</td></tr>`;
+    return `<tr class="product-table-row" data-product="${x.id}"><td><button class="product-link" type="button">${x.name}</button></td><td>${m.tests}</td><td>${m.executed}</td><td>${m.pass}</td><td>${m.fail}</td><td><div class="progress-track"><div class="progress-fill" style="width:${m.progress}%"></div></div><span class="progress-text">${m.progress}%</span></td><td>${badge(x.status)}</td></tr>`;
   }).join("");
-  $("productsPageTable").querySelectorAll(".product-link").forEach(b => b.onclick = () => showProduct(b.dataset.product));
+  tableBody.querySelectorAll(".product-table-row").forEach(row => {
+    row.addEventListener("click", () => showProduct(row.dataset.product));
+  });
 }
 
 function renderExpandableList(items, containerId, countId, summaryId = null) {
@@ -124,9 +180,9 @@ function renderExpandableList(items, containerId, countId, summaryId = null) {
 
   const summaryEl = summaryId ? $(summaryId) : null;
   if (summaryEl) {
-    summaryEl.innerHTML = `<table aria-label="Status summary">
-      <thead><tr><th scope="col">Total</th><th scope="col">Open</th><th scope="col">In Progress</th><th scope="col">Completed</th><th scope="col">Rejected</th></tr></thead>
-      <tbody><tr><td>${total}</td><td>${open}</td><td>${inProgress}</td><td>${complete}</td><td>${rejects}</td></tr></tbody>
+    summaryEl.innerHTML = `<table class="status-summary-table" aria-label="Status summary">
+      <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
+      <tbody><tr><td>${total}</td><td class="status-summary-open">${open}</td><td class="status-summary-progress">${inProgress}</td><td class="status-summary-completed">${complete}</td><td class="status-summary-rejected">${rejects}</td></tr></tbody>
     </table>`;
   }
 
@@ -140,6 +196,62 @@ function renderExpandableList(items, containerId, countId, summaryId = null) {
     if (s.includes("reject") || s.includes("fail")) return "rejected";
     return "open";
   };
+
+  if (summaryId) {
+    const isProductsList = containerId === "productsExpandableList";
+    const portfolioAreas = {
+      sourcingExpandableList: "Sourcing",
+      fieldIssuesExpandableList: "Field Issues",
+      qualityExpandableList: "Quality",
+      rndExpandableList: "R&D",
+      nitExpandableList: "NIT"
+    };
+    const itemArea = portfolioAreas[containerId];
+    listEl.innerHTML = `<table class="portfolio-items-table${isProductsList ? " products-data-table" : ""}">
+      <thead>
+        <tr>
+          <th scope="col">${isProductsList ? "Product" : "Item"}</th>
+          <th scope="col">Total TC</th>
+          <th scope="col">Executed</th>
+          <th scope="col">Pass</th>
+          <th scope="col">Fail</th>
+          <th scope="col">Progress</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map((x, index) => {
+      const m = metrics(x);
+      const itemName = isProductsList || itemArea
+        ? `<button class="product-link" type="button" data-item-index="${index}"${isProductsList ? ` data-product="${x.id}"` : ""}>${x.name}</button>`
+        : x.name;
+      return `<tr>
+          <td class="portfolio-item-name">${itemName}</td>
+          <td>${m.tests}</td>
+          <td>${m.executed}</td>
+          <td>${m.pass}</td>
+          <td>${m.fail}</td>
+          <td>
+            <div class="products-data-progress">
+              <div class="progress-track-modern"><div class="progress-fill-modern" style="width:${m.progress}%"></div></div>
+              <span class="progress-text-modern">${m.progress}%</span>
+            </div>
+          </td>
+          <td><span class="status-badge ${getBadgeClass(x.status)}">${x.status}</span></td>
+        </tr>`;
+    }).join("")}
+      </tbody>
+    </table>`;
+    if (isProductsList || itemArea) {
+      listEl.querySelectorAll(".product-link").forEach(button => {
+        button.addEventListener("click", () => {
+          if (isProductsList) showProduct(button.dataset.product, true);
+          else showAreaItem(itemArea, Number(button.dataset.itemIndex), true);
+        });
+      });
+    }
+    return;
+  }
   
   listEl.innerHTML = items.map((x, i) => {
     const m = metrics(x);
@@ -316,73 +428,69 @@ function renderPEPortfolioTable() {
   });
 
   if (summaryEl) {
-    summaryEl.innerHTML = `<table aria-label="Part Qualification project status summary">
-      <thead><tr><th scope="col">Total</th><th scope="col">Open</th><th scope="col">In Progress</th><th scope="col">Completed</th><th scope="col">Rejected</th></tr></thead>
-      <tbody><tr><td>${loaded.length}</td><td>${openCount}</td><td>${inProgressCount}</td><td>${completedCount}</td><td>${rejectedCount}</td></tr></tbody>
+    summaryEl.innerHTML = `<table class="status-summary-table" aria-label="Part Qualification project status summary">
+      <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
+      <tbody><tr><td>${loaded.length}</td><td class="status-summary-open">${openCount}</td><td class="status-summary-progress">${inProgressCount}</td><td class="status-summary-completed">${completedCount}</td><td class="status-summary-rejected">${rejectedCount}</td></tr></tbody>
     </table>`;
   }
 
-  listEl.innerHTML = projectStats.map(({ pd, total, design, pq, src, sq, samp, fac, progress }, i) => {
-    // All values come from precomputed projectStats — no recalculation needed
-    
-    return `<div class="expandable-item" id="exp-item-peProjectExpandableList-${i}">
-      <div class="expandable-header" onclick="toggleExpand('peProjectExpandableList', ${i})">
-        <span class="expandable-icon">
-          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </span>
-        ${pd.config.name}
-      </div>
-      <div class="expandable-content">
-        <div class="expandable-content-inner">
-          <table class="expandable-table">
-            <thead>
-              <tr>
-                <th style="width:14%">Total Parts</th>
-                <th style="width:14%">Design</th>
-                <th style="width:14%">Part Qual.</th>
-                <th style="width:14%">Sourcing</th>
-                <th style="width:14%">Supplier Qual.</th>
-                <th style="width:14%">Sample</th>
-                <th style="width:16%">Progress</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>${total}</td>
-                <td>${design}</td>
-                <td>${pq}</td>
-                <td>${src}</td>
-                <td>${sq}</td>
-                <td>${samp}</td>
-                <td>
-                  <div class="progress-container">
-                    <div class="progress-track-modern"><div class="progress-fill-modern" style="width:${progress}%"></div></div>
-                    <span class="progress-text-modern">${progress}%</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>`;
-  }).join("");
+  listEl.innerHTML = `<table class="portfolio-items-table pe-projects-table">
+    <thead>
+      <tr>
+        <th scope="col">Project</th>
+        <th scope="col">Total Parts</th>
+        <th scope="col">Design</th>
+        <th scope="col">Part Qual.</th>
+        <th scope="col">Sourcing</th>
+        <th scope="col">Supplier Qual.</th>
+        <th scope="col">Sample</th>
+        <th scope="col">Progress</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${projectStats.map(({ key, pd, total, design, pq, src, sq, samp, progress }) => `<tr>
+        <td class="portfolio-item-name"><button class="product-link pe-project-link" type="button" data-project-key="${key}">${pd.config.name}</button></td>
+        <td>${total}</td>
+        <td>${design}</td>
+        <td>${pq}</td>
+        <td>${src}</td>
+        <td>${sq}</td>
+        <td>${samp}</td>
+        <td><div class="products-data-progress">
+          <div class="progress-track-modern"><div class="progress-fill-modern" style="width:${progress}%"></div></div>
+          <span class="progress-text-modern">${progress}%</span>
+        </div></td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+  listEl.querySelectorAll(".pe-project-link").forEach(button => {
+    button.addEventListener("click", () => openPortfolioProjectDetail(button.dataset.projectKey));
+  });
 }
 let selectedProduct = null, categoryChart;
-function showProduct(id) {
+function showProduct(id, returnToPortfolio = false) {
   const p = products.find(x => x.id === id); if (!p) return;
-  showDetail(p, "Products", p.name);
+  showDetail(p, "Products", p.name, returnToPortfolio);
 }
-function showAreaItem(area, index) {
+function showAreaItem(area, index, returnToPortfolio = false) {
   const map = { "Sourcing": "sourcing", "Field Issues": "fieldIssues", "Quality": "quality", "R&D": "rnd", "NIT": "nit" };
   const item = areaData[map[area]][index]; if (!item) return;
-  showDetail(item, area, item.name);
+  showDetail(item, area, item.name, returnToPortfolio);
 }
-function showDetail(item, area, name) {
+function showDetail(item, area, name, returnToPortfolio = false) {
   selectedProduct = item; showView("product");
   const viewMap = { "Products": "products", "Sourcing": "sourcing", "Field Issues": "fieldIssues", "Quality": "quality", "R&D": "rnd", "NIT": "nit" };
-  $("backToParent").textContent = `← Back to ${area}`;
-  $("backToParent").onclick = () => { const v = viewMap[area]; if (v) document.querySelector(`.nav-item[data-view="${v}"]`)?.click(); };
+  $("backToParent").textContent = returnToPortfolio ? "← Back to Validation Portfolio" : `← Back to ${area}`;
+  $("backToParent").onclick = () => {
+    if (returnToPortfolio) {
+      showView("validationPortfolio");
+      $("breadcrumb").textContent = "Dashboard / Validation Portfolio";
+      $("pageTitle").textContent = "Validation Portfolio";
+      return;
+    }
+    const v = viewMap[area];
+    if (v) document.querySelector(`.nav-item[data-view="${v}"]`)?.click();
+  };
   $("breadcrumb").textContent = `Dashboard / ${area} / ${name}`; $("pageTitle").textContent = name;
   if ($("productTitle")) $("productTitle").textContent = name; $("productDescription").textContent = item.description || "Validation item and associated test cases.";
   $("productStatus").textContent = item.status || "In Validation";
@@ -451,7 +559,10 @@ document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => {
   if (v === "quality") renderModuleLanding("quality", "Quality");
   if (v === "rnd") renderModuleLanding("rnd", "R&D");
   if (v === "nit") renderModuleLanding("nit", "NIT");
-  if (v === "partQualification") renderPartQualificationPage();
+  if (v === "partQualification") {
+    partQualificationReturnToPortfolio = false;
+    renderPartQualificationPage();
+  }
 });
 
 const projectsConfig = {
@@ -461,6 +572,7 @@ const projectsConfig = {
 
 let loadedProjectsData = {};
 let currentSelectedProject = null;
+let partQualificationReturnToPortfolio = false;
 let autoRefreshTimer = null;
 let isFirstLoad = true;
 
@@ -1122,6 +1234,14 @@ window.openProjectDetail = function (projectKey) {
   renderPQDetailView(projectKey);
 };
 
+function openPortfolioProjectDetail(projectKey) {
+  partQualificationReturnToPortfolio = true;
+  showView("partQualification");
+  $("breadcrumb").textContent = `Dashboard / Product Portfolio / ${projectsConfig[projectKey].name}`;
+  $("pageTitle").textContent = projectsConfig[projectKey].name;
+  openProjectDetail(projectKey);
+}
+
 function renderPQDetailView(projectKey) {
   const v = $("partQualificationView");
   const pd = loadedProjectsData[projectKey];
@@ -1138,6 +1258,7 @@ function renderPQDetailView(projectKey) {
                 <p>Readiness Stage Progress from ${pd.config.sheet}</p>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
+                ${partQualificationReturnToPortfolio ? '<button type="button" class="back-link" id="pqBackToProductPortfolio">← Back to Product Portfolio</button>' : ''}
                 <select id="topProjectDropdownDetail" onchange="handleTopDropdown(this.value)" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#fff; font-weight:500;">
                     <option value="">Select Project</option>
                     <option value="fishFeeder" ${projectKey === 'fishFeeder' ? 'selected' : ''}>Fish Feeder 2026</option>
@@ -1193,6 +1314,15 @@ function renderPQDetailView(projectKey) {
     `;
 
   v.innerHTML = html;
+  const portfolioBackButton = $("pqBackToProductPortfolio");
+  if (portfolioBackButton) {
+    portfolioBackButton.onclick = () => {
+      partQualificationReturnToPortfolio = false;
+      showView("productPortfolio");
+      $("breadcrumb").textContent = "Dashboard / Product Portfolio";
+      $("pageTitle").textContent = "Product Portfolio";
+    };
+  }
   renderMaturityGroupCharts(pd.maturityTable || []);
   const readinessStageColors = {
     "Design Readiness": "#fcd34d",

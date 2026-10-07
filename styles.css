@@ -505,6 +505,10 @@ tbody tr:hover {
   text-align: left
 }
 
+.product-table-row {
+  cursor: pointer
+}
+
 .status {
   display: inline-flex;
   padding: 4px 8px;
@@ -971,6 +975,30 @@ tbody tr:hover {
   font-weight: 600;
 }
 
+.products-status-summary .status-summary-open,
+.portfolio-status-summary .status-summary-open {
+  background-color: #f0f1f3;
+  color: #59616e !important;
+}
+
+.products-status-summary .status-summary-progress,
+.portfolio-status-summary .status-summary-progress {
+  background-color: #edf4ff;
+  color: #2563eb !important;
+}
+
+.products-status-summary .status-summary-completed,
+.portfolio-status-summary .status-summary-completed {
+  background-color: #eaf8f2;
+  color: #059669 !important;
+}
+
+.products-status-summary .status-summary-rejected,
+.portfolio-status-summary .status-summary-rejected {
+  background-color: #fff0f0;
+  color: #dc2626 !important;
+}
+
 .products-status-summary th:not(:last-child),
 .products-status-summary td:not(:last-child),
 .portfolio-status-summary th:not(:last-child),
@@ -978,11 +1006,218 @@ tbody tr:hover {
   border-right: 1px solid #e5eef2;
 }
 
+.products-area-title {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+}
+
+.section-accordion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.section-accordion-toggle:focus-visible {
+  outline: 2px solid #1687d9;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.section-accordion-chevron {
+  width: 14px;
+  flex: none;
+  color: #64748b;
+  font-size: 20px;
+  line-height: 1;
+  transition: transform .25s ease;
+}
+
+.section-accordion-toggle[aria-expanded="true"] .section-accordion-chevron {
+  transform: rotate(90deg);
+  color: #1687d9;
+}
+
+.section-accordion-copy {
+  min-width: 0;
+}
+
+.section-accordion-copy h3,
+.section-accordion-copy p {
+  display: block;
+}
+
+.section-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows .3s ease, opacity .25s ease;
+}
+
+.products-card.is-expanded .section-accordion-content,
+.portfolio-summary-card.is-expanded .section-accordion-content {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.section-accordion-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.products-card .portfolio-items-table,
+.portfolio-summary-card .portfolio-items-table {
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.products-card .portfolio-items-table th,
+.portfolio-summary-card .portfolio-items-table th {
+  padding: 12px 10px;
+  background: #f1f6fc;
+  color: #36516d;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.products-card .portfolio-items-table td,
+.portfolio-summary-card .portfolio-items-table td {
+  padding: 15px 10px;
+  border-bottom: 1px solid #e5eef2;
+  color: #1a2b45;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.products-card .portfolio-items-table th:first-child,
+.products-card .portfolio-items-table td:first-child,
+.portfolio-summary-card .portfolio-items-table th:first-child,
+.portfolio-summary-card .portfolio-items-table td:first-child {
+  width: 22%;
+}
+
+.products-card .portfolio-items-table th:nth-child(2),
+.products-card .portfolio-items-table td:nth-child(2),
+.products-card .portfolio-items-table th:nth-child(3),
+.products-card .portfolio-items-table td:nth-child(3),
+.products-card .portfolio-items-table th:nth-child(4),
+.products-card .portfolio-items-table td:nth-child(4),
+.products-card .portfolio-items-table th:nth-child(5),
+.products-card .portfolio-items-table td:nth-child(5),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) th:nth-child(2),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) td:nth-child(2),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) th:nth-child(3),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) td:nth-child(3),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) th:nth-child(4),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) td:nth-child(4),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) th:nth-child(5),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) td:nth-child(5) {
+  width: 10%;
+}
+
+.products-card .portfolio-items-table th:nth-child(6),
+.products-card .portfolio-items-table td:nth-child(6),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) th:nth-child(6),
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) td:nth-child(6) {
+  width: 20%;
+}
+
+.products-card .portfolio-items-table th:last-child,
+.products-card .portfolio-items-table td:last-child,
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) th:last-child,
+.portfolio-summary-card .portfolio-items-table:not(.pe-projects-table) td:last-child {
+  width: 18%;
+}
+
+.portfolio-summary-card .pe-projects-table th:first-child,
+.portfolio-summary-card .pe-projects-table td:first-child {
+  width: 20%;
+}
+
+.portfolio-summary-card .pe-projects-table th:not(:first-child):not(:last-child),
+.portfolio-summary-card .pe-projects-table td:not(:first-child):not(:last-child) {
+  width: 10%;
+  text-align: center;
+}
+
+.portfolio-summary-card .pe-projects-table th:last-child,
+.portfolio-summary-card .pe-projects-table td:last-child {
+  width: 20%;
+}
+
+.portfolio-items-table .portfolio-item-name {
+  color: #086bb5 !important;
+  font-weight: 700;
+}
+
+.products-data-progress {
+  max-width: 165px;
+}
+
+.products-data-progress .progress-track-modern {
+  width: 100%;
+}
+
+.products-data-progress .progress-text-modern {
+  display: block;
+  margin: 4px 0 0 8px;
+}
+
+.portfolio-items-table .status-badge {
+  padding: 0;
+  background: transparent;
+  color: #10243f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 @media(max-width:760px) {
   .products-section .area-title,
   .portfolio-summary-section .area-title {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
+  }
+
+  .products-section .products-area-title {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media(max-width:600px) {
+  .products-card .portfolio-items-table th,
+  .products-card .portfolio-items-table td,
+  .portfolio-summary-card .portfolio-items-table th,
+  .portfolio-summary-card .portfolio-items-table td {
+    padding: 9px 4px;
+    font-size: 9px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .portfolio-summary-card .pe-projects-table th,
+  .portfolio-summary-card .pe-projects-table td {
+    padding: 8px 2px;
+    font-size: 8px;
+  }
+
+  .products-data-progress {
+    min-width: 42px;
+  }
+
+  .products-data-progress .progress-text-modern {
+    margin-left: 0;
+    font-size: 9px;
   }
 }
 
@@ -1468,8 +1703,55 @@ body {
   background: linear-gradient(135deg, #df6b6b, #f18a8a)
 }
 
+.kpi-icon.gray {
+  background: linear-gradient(135deg, #687180, #9098a5)
+}
+
+.progress-status-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.progress-status-track,
+.progress-status-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.progress-status-track {
+  opacity: .35;
+}
+
+.progress-status-line {
+  stroke-dasharray: 6 18;
+  animation: progress-status-line-move 1.4s linear infinite;
+}
+
+@keyframes progress-status-line-move {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-status-line {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
 .kpi-icon.purple {
   background: linear-gradient(135deg, #8c71c7, #a68cdb)
+}
+
+.validation-portfolio-overview-heading {
+  margin-top: 2px;
+}
+
+.validation-status-kpis {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .kpi-content {
@@ -1646,9 +1928,17 @@ body {
   .kpi-grid {
     grid-template-columns: repeat(3, 1fr)
   }
+
+  .validation-status-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+  }
 }
 
 @media(max-width:700px) {
+  .validation-status-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr))
+  }
+
   .main {
     margin-left: 0;
     width: 100%;
