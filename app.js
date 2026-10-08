@@ -1,13 +1,6 @@
 const areaData = {
   sourcing: [
     {
-      name: "Mono Cell Solar Panel", status: "In Validation", description: "Validation of sourced solar panel for electrical, environmental and performance requirements.", tests: 20, executed: 2, pass: 1, fail: 1, blocked: 0, cases: [
-        ["SP-001", "Electrical", "Open-circuit voltage verification", "PASS", "High"], ["SP-002", "Electrical", "Output under rated illumination", "PASS", "High"], ["SP-003", "Environmental", "Outdoor temperature exposure", "FAIL", "Medium"], ["SP-004", "Mechanical", "Mounting integrity", "PASS", "Medium"]]
-    },
-    {
-      name: "Sirius - Poly", status: "In Validation", description: "Sourcing validation for Sirius - Poly.", tests: 20, executed: 3, pass: 0, fail: 0, blocked: 0, cases: []
-    },
-    {
       name: "Sirius - Mono", status: "In Validation", description: "Sourcing validation for Sirius - Mono.", tests: 20, executed: 4, pass: 0, fail: 0, blocked: 0, cases: []
     },
     {
@@ -319,24 +312,25 @@ function renderProductsPage() {
 }
 
 function renderExpandableList(items, containerId, countId, summaryId = null) {
-  let total = items.length, open = 0, inProgress = 0, complete = 0, rejects = 0;
+  let total = items.length, open = 0, inProgress = 0, parked = 0, complete = 0, rejects = 0;
   items.forEach(x => {
     let s = (x.status || "").toLowerCase();
     if (s.includes("open")) open++;
     else if (s.includes("progress") || s.includes("in validation")) inProgress++;
+    else if (s.includes("park")) parked++;
     else if (s.includes("complete")) complete++;
     else if (s.includes("reject")) rejects++;
   });
 
   if (countId && $(countId)) {
-    $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Completed: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejected: <strong style="color:var(--danger)">${rejects}</strong></span>`;
+    $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Parked: <strong style="color:#7656ad">${parked}</strong> &nbsp;|&nbsp; Completed: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejected: <strong style="color:var(--danger)">${rejects}</strong></span>`;
   }
 
   const summaryEl = summaryId ? $(summaryId) : null;
   if (summaryEl) {
     summaryEl.innerHTML = `<table class="status-summary-table" aria-label="Status summary">
-      <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
-      <tbody><tr><td>${total}</td><td class="status-summary-open">${open}</td><td class="status-summary-progress">${inProgress}</td><td class="status-summary-completed">${complete}</td><td class="status-summary-rejected">${rejects}</td></tr></tbody>
+      <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-parked" scope="col">Parked</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
+      <tbody><tr><td>${total}</td><td class="status-summary-open">${open}</td><td class="status-summary-progress">${inProgress}</td><td class="status-summary-parked">${parked}</td><td class="status-summary-completed">${complete}</td><td class="status-summary-rejected">${rejects}</td></tr></tbody>
     </table>`;
   }
 
@@ -574,7 +568,7 @@ function renderPEPortfolioTable() {
   });
 
   // Classify each project for the status summary
-  let openCount = 0, inProgressCount = 0, completedCount = 0, rejectedCount = 0;
+  let openCount = 0, inProgressCount = 0, parkedCount = 0, completedCount = 0, rejectedCount = 0;
   projectStats.forEach(({ progress }) => {
     if (progress === 100)   completedCount++;
     else if (progress > 0)  inProgressCount++;
@@ -584,8 +578,8 @@ function renderPEPortfolioTable() {
 
   if (summaryEl) {
     summaryEl.innerHTML = `<table class="status-summary-table" aria-label="Part Qualification project status summary">
-      <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
-      <tbody><tr><td>${loaded.length}</td><td class="status-summary-open">${openCount}</td><td class="status-summary-progress">${inProgressCount}</td><td class="status-summary-completed">${completedCount}</td><td class="status-summary-rejected">${rejectedCount}</td></tr></tbody>
+      <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-parked" scope="col">Parked</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
+      <tbody><tr><td>${loaded.length}</td><td class="status-summary-open">${openCount}</td><td class="status-summary-progress">${inProgressCount}</td><td class="status-summary-parked">${parkedCount}</td><td class="status-summary-completed">${completedCount}</td><td class="status-summary-rejected">${rejectedCount}</td></tr></tbody>
     </table>`;
   }
 
@@ -816,11 +810,11 @@ function renderFactoryHandoverPortfolioTable() {
     else if (project.progress > 0) counts.inProgress++;
     else counts.open++;
     return counts;
-  }, { total: 0, open: 0, inProgress: 0, completed: 0, rejected: 0 });
+  }, { total: 0, open: 0, inProgress: 0, parked: 0, completed: 0, rejected: 0 });
 
   summaryEl.innerHTML = `<table class="status-summary-table" aria-label="Factory Handover project status summary">
-    <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
-    <tbody><tr><td>${summary.total}</td><td class="status-summary-open">${summary.open}</td><td class="status-summary-progress">${summary.inProgress}</td><td class="status-summary-completed">${summary.completed}</td><td class="status-summary-rejected">${summary.rejected}</td></tr></tbody>
+    <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-parked" scope="col">Parked</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
+    <tbody><tr><td>${summary.total}</td><td class="status-summary-open">${summary.open}</td><td class="status-summary-progress">${summary.inProgress}</td><td class="status-summary-parked">${summary.parked}</td><td class="status-summary-completed">${summary.completed}</td><td class="status-summary-rejected">${summary.rejected}</td></tr></tbody>
   </table>`;
 
   tableEl.innerHTML = `<table class="portfolio-items-table factory-handover-projects-table">

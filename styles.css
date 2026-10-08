@@ -1109,6 +1109,12 @@ tbody tr:hover {
   color: #2563eb !important;
 }
 
+.products-status-summary .status-summary-parked,
+.portfolio-status-summary .status-summary-parked {
+  background-color: #f1ebfa;
+  color: #7656ad !important;
+}
+
 .products-status-summary .status-summary-completed,
 .portfolio-status-summary .status-summary-completed {
   background-color: #eaf8f2;
