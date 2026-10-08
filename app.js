@@ -1,8 +1,17 @@
 const areaData = {
   sourcing: [
     {
-      name: "Mono Cell Solar Panel", status: "In Validation", description: "Validation of sourced solar panel for electrical, environmental and performance requirements.", tests: 150, executed: 45, pass: 40, fail: 5, blocked: 0, cases: [
+      name: "Mono Cell Solar Panel", status: "In Validation", description: "Validation of sourced solar panel for electrical, environmental and performance requirements.", tests: 20, executed: 2, pass: 1, fail: 1, blocked: 0, cases: [
         ["SP-001", "Electrical", "Open-circuit voltage verification", "PASS", "High"], ["SP-002", "Electrical", "Output under rated illumination", "PASS", "High"], ["SP-003", "Environmental", "Outdoor temperature exposure", "FAIL", "Medium"], ["SP-004", "Mechanical", "Mounting integrity", "PASS", "Medium"]]
+    },
+    {
+      name: "Sirius - Poly", status: "In Validation", description: "Sourcing validation for Sirius - Poly.", tests: 20, executed: 3, pass: 0, fail: 0, blocked: 0, cases: []
+    },
+    {
+      name: "Sirius - Mono", status: "In Validation", description: "Sourcing validation for Sirius - Mono.", tests: 20, executed: 4, pass: 0, fail: 0, blocked: 0, cases: []
+    },
+    {
+      name: "Ananya - Mono", status: "In Validation", description: "Sourcing validation for Ananya - Mono.", tests: 18, executed: 3, pass: 0, fail: 0, blocked: 0, cases: []
     }
   ],
   fieldIssues: [
