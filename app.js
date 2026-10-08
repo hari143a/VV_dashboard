@@ -610,7 +610,7 @@ function renderPEOverviewChart() {
   // Update subtitle dynamically with all project names
   const peSubtitle = $("peSubtitle");
   if (peSubtitle) {
-    const names = projectKeys.map(k => projectsConfig[k].name.replace(/\s+2026\b/g, "")).join(' & ');
+    const names = projectKeys.map(k => projectsConfig[k].name).join(' & ');
     peSubtitle.textContent = `Part Qualification & Factory Handover status.`;
   }
 
@@ -1052,8 +1052,8 @@ document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => {
 });
 
 const projectsConfig = {
-  fishFeeder: { id: "fishFeeder", name: "Fish Feeder 2026", file: "excel files/Product engineer/Part_Qualification_FF_Tracker_2026.xlsx", sheet: "FF_2026" },
-  nurseryFeeder: { id: "nurseryFeeder", name: "Nursery Feeder 2026", file: "excel files/Product engineer/Part_Qualification_NF_Tracker_2026.xlsx", sheet: "NF_2026" }
+  fishFeeder: { id: "fishFeeder", name: "Fish Feeder", file: "excel files/Product engineer/Part_Qualification_FF_Tracker_2026.xlsx", sheet: "FF_2026" },
+  nurseryFeeder: { id: "nurseryFeeder", name: "Nursery Feeder", file: "excel files/Product engineer/Part_Qualification_NF_Tracker_2026.xlsx", sheet: "NF_2026" }
 };
 
 let loadedProjectsData = {};
@@ -1598,8 +1598,8 @@ function renderPQMainView() {
             <div style="display:flex; gap:10px; align-items:center;">
                 <select id="topProjectDropdown" onchange="handleTopDropdown(this.value)" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#fff; font-weight:500;">
                     <option value="">Select Project</option>
-                    <option value="fishFeeder">Fish Feeder 2026</option>
-                    <option value="nurseryFeeder">Nursery Feeder 2026</option>
+                    <option value="fishFeeder">Fish Feeder</option>
+                    <option value="nurseryFeeder">Nursery Feeder</option>
                 </select>
             </div>
         </div>
@@ -1747,8 +1747,8 @@ function renderPQDetailView(projectKey) {
                 ${partQualificationReturnToPortfolio ? '<button type="button" class="back-link" id="pqBackToProductPortfolio">← Back to Product Portfolio</button>' : ''}
                 <select id="topProjectDropdownDetail" onchange="handleTopDropdown(this.value)" style="padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:#fff; font-weight:500;">
                     <option value="">Select Project</option>
-                    <option value="fishFeeder" ${projectKey === 'fishFeeder' ? 'selected' : ''}>Fish Feeder 2026</option>
-                    <option value="nurseryFeeder" ${projectKey === 'nurseryFeeder' ? 'selected' : ''}>Nursery Feeder 2026</option>
+                    <option value="fishFeeder" ${projectKey === 'fishFeeder' ? 'selected' : ''}>Fish Feeder</option>
+                    <option value="nurseryFeeder" ${projectKey === 'nurseryFeeder' ? 'selected' : ''}>Nursery Feeder</option>
                 </select>
             </div>
         </div>
