@@ -32,12 +32,14 @@ const areaData = {
         ["LC-001", "Functional", "Light operation verification", "PASS", "High"], ["LC-002", "Electrical", "Power consumption", "PASS", "Medium"], ["LC-003", "Safety", "Visibility at distance", "PASS", "High"]]
     },
     {
-      name: "IP Rating Test", status: "In Validation", description: "Engineering validation of IP rating compliance.", tests: 140, executed: 70, pass: 65, fail: 5, blocked: 0, cases: [
-        ["IP-001", "Environmental", "Water ingress test", "PASS", "High"], ["IP-002", "Environmental", "Dust ingress test", "FAIL", "High"], ["IP-003", "Mechanical", "Seal integrity", "NOT EXECUTED", "Medium"]]
-    },
-    {
       name: "Hopper Top & Bottom Lid", status: "In Validation", description: "Engineering validation of Hopper Top & Bottom Lid mechanics and fitment.", tests: 164, executed: 123, pass: 118, fail: 5, blocked: 0, cases: [
         ["HL-001", "Mechanical", "Lid fitment", "PASS", "High"], ["HL-002", "Functional", "Opening and closing mechanism", "FAIL", "High"], ["HL-003", "Reliability", "Hinge durability", "NOT EXECUTED", "Medium"]]
+    }
+  ],
+  thirdParty: [
+    {
+      name: "IP Rating Test", status: "In Validation", description: "Third-party validation of IP rating compliance.", tests: 140, executed: 70, pass: 65, fail: 5, blocked: 0, cases: [
+        ["IP-001", "Environmental", "Water ingress test", "PASS", "High"], ["IP-002", "Environmental", "Dust ingress test", "FAIL", "High"], ["IP-003", "Mechanical", "Seal integrity", "NOT EXECUTED", "Medium"]]
     }
   ],
   nit: [
@@ -58,8 +60,7 @@ const products = [
       ["PM-001", "Functional", "Power-on sequence", "Controller", "PASS", "High", "Venkatesh"], ["PM-002", "Performance", "Feed rate accuracy", "Dispenser", "PASS", "High", "Akash"], ["PM-003", "Safety", "Emergency stop", "Safety", "PASS", "High", "Kiran"], ["PM-004", "Reliability", "Extended dispensing cycle", "Dispenser", "FAIL", "High", "Akash"], ["PM-005", "Performance", "Motor current profile", "Motor", "FAIL", "Medium", "Venkatesh"]]
   },
   {
-    id: "nursery-feeder", name: "Nursery Feeder", status: "In Validation", description: "Nursery Feeder validation covering movement, feeding, safety, reliability and serviceability.", tests: 180, executed: 54, pass: 48, fail: 6, blocked: 0, categories: [{ name: "Functional", pass: 95, fail: 2 }, { name: "Performance", pass: 87, fail: 3 }, { name: "Safety", pass: 100, fail: 0 }, { name: "Reliability", pass: 82, fail: 2 }, { name: "Serviceability", pass: 91, fail: 0 }], cases: [
-      ["NF-001", "Safety", "Emergency stop operation", "Safety", "PASS", "High", "Venkatesh"], ["NF-002", "Movement", "Forward travel consistency", "Mover", "PASS", "High", "Akash"], ["NF-003", "Performance", "Travel time consistency", "Performance", "PASS", "Medium", "Kiran"], ["NF-004", "Feeding", "Feed dispensing while stationary", "Dispenser", "FAIL", "High", "Venkatesh"]]
+    id: "nursery-feeder", name: "Nursery Feeder", status: "In Validation", description: "Nursery Feeder validation covering movement, feeding, safety, reliability and serviceability.", tests: 0, executed: 0, pass: 0, fail: 0, blocked: 0, cases: []
   },
   {
     id: "fish-feeder", name: "Fish Feeder", status: "Open", description: "Validation dashboard for Fish Feeder monitoring and pond data workflows.", tests: 130, executed: 0, pass: 0, fail: 0, blocked: 0, categories: [{ name: "Functional", pass: 0, fail: 0 }, { name: "Performance", pass: 0, fail: 0 }, { name: "Safety", pass: 0, fail: 0 }, { name: "Reliability", pass: 0, fail: 0 }, { name: "Data", pass: 0, fail: 0 }], cases: [
@@ -70,21 +71,159 @@ const products = [
 
 
 const $ = id => document.getElementById(id), pct = (a, b) => b ? Math.round(a / b * 100) : 0;
-const kpi = (l, v, n = "") => { const icons = { "Validation Items": "▤", "Test Cases": "☷", "Executed": "▶", "Passed": "✓", "Failed": "×", "Blocked": "!", "Overall Pass Rate": "◔", "Total Test Cases": "☷", "Pass Rate": "◔", "Total": "▤", "Open": "☷", "In Progress": '<svg class="progress-status-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="progress-status-track" d="M3 12h18"/><path class="progress-status-line" d="M3 12h18"/></svg>', "Completed": "✓", "Rejected": "×" }; const tone = { "Passed": "green", "Failed": "red", "Executed": "cyan", "Validation Items": "blue", "Test Cases": "green", "Overall Pass Rate": "blue", "Blocked": "purple", "Total Test Cases": "green", "Pass Rate": "blue", "Total": "blue", "Open": "gray", "In Progress": "blue", "Completed": "green", "Rejected": "red" }; return `<div class="kpi"><div class="kpi-icon ${tone[l] || "blue"}">${icons[l] || "•"}</div><div class="kpi-content"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div>${n ? `<div class="kpi-note">${n}</div>` : ""}</div></div>` };
-const badge = s => `<span class="status status-${s.replaceAll(" ", "-")}">${s}</span>`;
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+const kpi = (l, v, n = "") => { const icons = { "Validation Items": "▤", "Test Cases": "☷", "Executed": "▶", "Passed": "✓", "Failed": "×", "Overall Pass Rate": "◔", "Total Test Cases": "☷", "Pass Rate": "◔", "Total": "▤", "Open": "☷", "In Progress": '<svg class="progress-status-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="progress-status-track" d="M3 12h18"/><path class="progress-status-line" d="M3 12h18"/></svg>', "Parked": "Ⅱ", "Completed": "✓", "Rejected": "×", "Blocked": "!" }; const tone = { "Passed": "green", "Failed": "red", "Executed": "cyan", "Validation Items": "blue", "Test Cases": "green", "Overall Pass Rate": "blue", "Blocked": "purple", "Total Test Cases": "green", "Pass Rate": "blue", "Total": "blue", "Open": "gray", "In Progress": "blue", "Parked": "purple", "Completed": "green", "Rejected": "red" }; return `<div class="kpi"><div class="kpi-icon ${tone[l] || "blue"}">${icons[l] || "•"}</div><div class="kpi-content"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div>${n ? `<div class="kpi-note">${n}</div>` : ""}</div></div>` };
+const badge = s => {
+  const label = String(s ?? "");
+  const statusClass = label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return `<span class="status status-${statusClass}">${escapeHtml(label)}</span>`;
+};
+
+let nurseryFeederWorkbookPromise = null;
+let nurseryFeederWorkbookState = "loading";
+let nurseryFeederWorkbookError = "";
+
+function testCaseFields(testCase) {
+  if (testCase.length <= 5) {
+    return {
+      id: testCase[0],
+      category: testCase[1],
+      scenario: testCase[2],
+      module: "—",
+      status: testCase[3] || "NOT EXECUTED",
+      priority: testCase[4] || "—",
+      tester: "—",
+      searchText: testCase.join(" ")
+    };
+  }
+  return {
+    id: testCase[0],
+    category: testCase[1],
+    scenario: testCase[2],
+    module: testCase[3],
+    status: testCase[4] || "NOT EXECUTED",
+    priority: testCase[5] || "—",
+    tester: testCase[6] || "—",
+    searchText: testCase.join(" ")
+  };
+}
+
+function isCountedAsExecuted(status) {
+  const value = String(status || "").trim().toUpperCase();
+  return value !== "" && !["NOT EXECUTED", "NOT RUN", "BLOCKED"].includes(value);
+}
+
+function sheetCategoryName(sheetName) {
+  const cleaned = sheetName
+    .replace(/_test_cases?$/i, "")
+    .replace(/_test$/i, "")
+    .replace(/_/g, " ")
+    .trim()
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+  const labels = {
+    "Basic Functional": "Basic Functionality",
+    "Ecudor Schedule": "Ecuador Schedule",
+    "Mechnical": "Mechanical"
+  };
+  return labels[cleaned] || cleaned;
+}
+
+async function loadNurseryFeederWorkbook() {
+  if (nurseryFeederWorkbookPromise) return nurseryFeederWorkbookPromise;
+
+  nurseryFeederWorkbookPromise = (async () => {
+    try {
+      if (typeof XLSX === "undefined") throw new Error("The Excel workbook reader is unavailable.");
+
+      const response = await fetch("excel files/Verifications & validations/Products/Nursery Feeder.xlsx");
+      if (!response.ok) throw new Error(`Workbook request failed with HTTP ${response.status}.`);
+
+      const workbook = XLSX.read(await response.arrayBuffer(), { type: "array" });
+      const sheets = workbook.SheetNames.filter(name => !["y", "index"].includes(name.trim().toLowerCase()));
+      const cases = [];
+
+      sheets.forEach(sheetName => {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+          header: 1,
+          defval: "",
+          blankrows: false
+        });
+        const normalizeHeader = value => String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+        const headerRowIndex = rows.findIndex(row => row.some(value => normalizeHeader(value) === "tcid"));
+        if (headerRowIndex < 0) throw new Error(`The "${sheetName}" sheet is missing a TC ID header.`);
+
+        const headers = rows[headerRowIndex].map(normalizeHeader);
+        const column = name => headers.indexOf(normalizeHeader(name));
+        const tcIdColumn = column("TC ID");
+        const category = sheetCategoryName(sheetName);
+        rows.slice(headerRowIndex + 1).forEach(row => {
+          const id = String(row[tcIdColumn] ?? "").trim();
+          if (!id) return;
+
+          const value = name => {
+            const index = column(name);
+            return index < 0 ? "" : String(row[index] ?? "").trim();
+          };
+          const status = value("Status") || "NOT EXECUTED";
+          cases.push([
+            id,
+            category,
+            value("Test Scenario"),
+            value("Test Place"),
+            status,
+            "",
+            "",
+            row.map(cell => String(cell ?? "").trim())
+          ]);
+        });
+      });
+
+      if (!sheets.length) throw new Error("The workbook does not contain any test-category sheets.");
+      if (!cases.length) throw new Error("No test cases with a TC ID were found in the workbook.");
+
+      const nurseryFeeder = products.find(product => product.id === "nursery-feeder");
+      nurseryFeeder.cases = cases;
+      nurseryFeeder.tests = cases.length;
+      nurseryFeeder.executed = cases.filter(testCase => isCountedAsExecuted(testCaseFields(testCase).status)).length;
+      nurseryFeeder.pass = cases.filter(testCase => ["PASS", "PASSED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+      nurseryFeeder.fail = cases.filter(testCase => ["FAIL", "FAILED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+      nurseryFeeder.blocked = cases.filter(testCase => testCaseFields(testCase).status.toUpperCase() === "BLOCKED").length;
+      nurseryFeederWorkbookState = "loaded";
+      refreshNurseryFeederViews(nurseryFeeder);
+    } catch (error) {
+      nurseryFeederWorkbookState = "error";
+      nurseryFeederWorkbookError = error.message;
+      console.error("Unable to load Nursery Feeder test cases from its workbook.", error);
+      refreshNurseryFeederViews(products.find(product => product.id === "nursery-feeder"));
+    }
+  })();
+
+  return nurseryFeederWorkbookPromise;
+}
+
+function refreshNurseryFeederViews(nurseryFeeder) {
+  renderValidationPortfolioKpis();
+  renderExpandableList(products, "productsExpandableList", null, "productsStatusSummary");
+  renderPortfolioCharts();
+  if ($("productsView")?.classList.contains("active")) renderProductsPage();
+  if (selectedProduct === nurseryFeeder && $("productView")?.classList.contains("active")) {
+    renderProductValidationData(nurseryFeeder);
+  }
+}
 
 function metrics(item) {
   const cases = item.cases || [];
   const tests = item.tests ?? cases.length;
-  const executed = item.executed ?? cases.filter(c => c[3] && c[3] !== "NOT EXECUTED").length;
-  const pass = item.pass ?? cases.filter(c => c[3] === "PASS").length;
-  const fail = item.fail ?? cases.filter(c => c[3] === "FAIL").length;
-  return { tests, executed, pass, fail, blocked: item.blocked || 0, progress: pct(executed, tests), passRate: pct(pass, executed) };
+  const executed = item.executed ?? cases.filter(testCase => isCountedAsExecuted(testCaseFields(testCase).status)).length;
+  const pass = item.pass ?? cases.filter(testCase => ["PASS", "PASSED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+  const fail = item.fail ?? cases.filter(testCase => ["FAIL", "FAILED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+  const blocked = item.blocked ?? cases.filter(testCase => testCaseFields(testCase).status.toUpperCase() === "BLOCKED").length;
+  return { tests, executed, pass, fail, blocked, progress: pct(executed, tests), passRate: pct(pass, executed) };
 }
 function allItems() {
   return [
     ...products.map(p => ({ area: "Products", id: p.id, name: p.name, status: p.status, cases: p.cases, tests: p.tests, executed: p.executed, pass: p.pass, fail: p.fail, blocked: p.blocked })),
-    ...Object.entries(areaData).flatMap(([area, items]) => items.map((x, i) => ({ ...x, area: area === "fieldIssues" ? "Field Issues" : area === "rnd" ? "R&D" : area[0].toUpperCase() + area.slice(1), id: `${area}-${i}` })))
+    ...Object.entries(areaData).flatMap(([area, items]) => items.map((x, i) => ({ ...x, area: area === "fieldIssues" ? "Field Issues" : area === "rnd" ? "R&D" : area === "thirdParty" ? "3rd Party" : area[0].toUpperCase() + area.slice(1), id: `${area}-${i}` })))
   ];
 }
 function overall() {
@@ -99,14 +238,18 @@ function renderOverview() {
     "fieldIssuesSectionToggle",
     "qualitySectionToggle",
     "rndSectionToggle",
+    "thirdPartySectionToggle",
     "nitSectionToggle",
-    "peProjectSectionToggle"
+    "peProjectSectionToggle",
+    "factoryHandoverPortfolioToggle"
   ].forEach(bindSectionAccordion);
   renderExpandableList(areaData.sourcing, "sourcingExpandableList", null, "sourcingStatusSummary");
   renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", null, "fieldIssuesStatusSummary");
   renderExpandableList(areaData.quality, "qualityExpandableList", null, "qualityStatusSummary");
   renderExpandableList(areaData.rnd, "rndExpandableList", null, "rndStatusSummary");
+  renderExpandableList(areaData.thirdParty, "thirdPartyExpandableList", null, "thirdPartyStatusSummary");
   renderExpandableList(areaData.nit, "nitExpandableList", null, "nitStatusSummary");
+  renderFactoryHandoverPortfolioTable();
   renderPortfolioCharts();
   // Auto-load ALL Excel projects from projectsConfig so PE chart renders on the overview page.
   // Adding a new project to projectsConfig is all that's needed — it loads automatically here.
@@ -128,15 +271,17 @@ function renderValidationPortfolioKpis() {
     counts.total++;
     if (status.includes("open")) counts.open++;
     else if (status.includes("progress") || status.includes("in validation")) counts.inProgress++;
+    else if (status.includes("park")) counts.parked++;
     else if (status.includes("complete")) counts.completed++;
     else if (status.includes("reject")) counts.rejected++;
     return counts;
-  }, { total: 0, open: 0, inProgress: 0, completed: 0, rejected: 0 });
+  }, { total: 0, open: 0, inProgress: 0, parked: 0, completed: 0, rejected: 0 });
 
   kpiContainer.innerHTML = [
     kpi("Total", summary.total),
     kpi("Open", summary.open),
     kpi("In Progress", summary.inProgress),
+    kpi("Parked", summary.parked),
     kpi("Completed", summary.completed),
     kpi("Rejected", summary.rejected)
   ].join("");
@@ -213,6 +358,7 @@ function renderExpandableList(items, containerId, countId, summaryId = null) {
       fieldIssuesExpandableList: "Field Issues",
       qualityExpandableList: "Quality",
       rndExpandableList: "R&D",
+      thirdPartyExpandableList: "3rd Party",
       nitExpandableList: "NIT"
     };
     const itemArea = portfolioAreas[containerId];
@@ -356,8 +502,8 @@ function renderPEOverviewChart() {
   // Update subtitle dynamically with all project names
   const peSubtitle = $("peSubtitle");
   if (peSubtitle) {
-    const names = projectKeys.map(k => projectsConfig[k].name).join(' & ');
-    peSubtitle.textContent = names + ' parts by stage.';
+    const names = projectKeys.map(k => projectsConfig[k].name.replace(/\s+2026\b/g, "")).join(' & ');
+    peSubtitle.textContent = `Part Qualification & Factory Handover status.`;
   }
 
   const stages = {
@@ -453,11 +599,12 @@ function renderPEPortfolioTable() {
         <th scope="col">Sourcing</th>
         <th scope="col">Supplier Qual.</th>
         <th scope="col">Sample</th>
+        <th scope="col">Factory Handover</th>
         <th scope="col">Progress</th>
       </tr>
     </thead>
     <tbody>
-      ${projectStats.map(({ key, pd, total, design, pq, src, sq, samp, progress }) => `<tr>
+      ${projectStats.map(({ key, pd, total, design, pq, src, sq, samp, fac, progress }) => `<tr>
         <td class="portfolio-item-name"><button class="product-link pe-project-link" type="button" data-project-key="${key}">${pd.config.name}</button></td>
         <td>${total}</td>
         <td>${design}</td>
@@ -465,6 +612,7 @@ function renderPEPortfolioTable() {
         <td>${src}</td>
         <td>${sq}</td>
         <td>${samp}</td>
+        <td>${fac}</td>
         <td><div class="products-data-progress">
           <div class="progress-track-modern"><div class="progress-fill-modern" style="width:${progress}%"></div></div>
           <span class="progress-text-modern">${progress}%</span>
@@ -482,13 +630,13 @@ function showProduct(id, returnToPortfolio = false) {
   showDetail(p, "Products", p.name, returnToPortfolio);
 }
 function showAreaItem(area, index, returnToPortfolio = false) {
-  const map = { "Sourcing": "sourcing", "Field Issues": "fieldIssues", "Quality": "quality", "R&D": "rnd", "NIT": "nit" };
+  const map = { "Sourcing": "sourcing", "Field Issues": "fieldIssues", "Quality": "quality", "R&D": "rnd", "3rd Party": "thirdParty", "NIT": "nit" };
   const item = areaData[map[area]][index]; if (!item) return;
   showDetail(item, area, item.name, returnToPortfolio);
 }
 function showDetail(item, area, name, returnToPortfolio = false) {
   selectedProduct = item; showView("product");
-  const viewMap = { "Products": "products", "Sourcing": "sourcing", "Field Issues": "fieldIssues", "Quality": "quality", "R&D": "rnd", "NIT": "nit" };
+  const viewMap = { "Products": "products", "Sourcing": "sourcing", "Field Issues": "fieldIssues", "Quality": "quality", "R&D": "rnd", "3rd Party": "thirdParty", "NIT": "nit" };
   $("backToParent").textContent = returnToPortfolio ? "← Back to Validation Portfolio" : `← Back to ${area}`;
   $("backToParent").onclick = () => {
     if (returnToPortfolio) {
@@ -503,43 +651,135 @@ function showDetail(item, area, name, returnToPortfolio = false) {
   $("breadcrumb").textContent = `Dashboard / ${area} / ${name}`; $("pageTitle").textContent = name;
   if ($("productTitle")) $("productTitle").textContent = name; $("productDescription").textContent = item.description || "Validation item and associated test cases.";
   $("productStatus").textContent = item.status || "In Validation";
+  renderProductValidationData(item);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderProductValidationData(item) {
   const m = metrics(item);
   $("productKpis").innerHTML = [kpi("Total Test Cases", m.tests, "Planned"), kpi("Executed", m.executed, `${m.progress}% execution`), kpi("Passed", m.pass, "Executed"), kpi("Failed", m.fail, "Attention"), kpi("Blocked", m.blocked, "Blocked")].join("");
   const getColor = (v) => v <= 20 ? "var(--danger)" : v <= 79 ? "#f97316" : "var(--success)";
   $("executionPercent").textContent = m.progress + "%"; $("executionBar").style.width = m.progress + "%";
   $("executionBar").style.background = getColor(m.progress);
   renderFailuresFromCases(item); setupFiltersForItem(item); renderCases(item.cases || []);
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function renderFailuresFromCases(item) {
   const cases = item.cases || [], map = {};
-  cases.filter(c => c[3] === "FAIL").forEach(c => map[c[1]] = (map[c[1]] || 0) + 1);
+  cases.filter(testCase => ["FAIL", "FAILED"].includes(testCaseFields(testCase).status.toUpperCase())).forEach(testCase => {
+    const category = testCaseFields(testCase).category;
+    map[category] = (map[category] || 0) + 1;
+  });
   const entries = Object.entries(map), max = Math.max(...entries.map(x => x[1]), 1);
-  $("failureList").innerHTML = entries.length ? entries.map(([name, n]) => `<div class="failure-item"><div class="failure-name">${name}</div><div class="failure-count">${n}</div><div class="failure-bar"><span style="width:${n / max * 100}%"></span></div></div>`).join("") : `<div class="small">No failures recorded.</div>`;
+  $("failureList").innerHTML = entries.length ? entries.map(([name, n]) => `<div class="failure-item"><div class="failure-name">${escapeHtml(name)}</div><div class="failure-count">${n}</div><div class="failure-bar"><span style="width:${n / max * 100}%"></span></div></div>`).join("") : `<div class="small">No failures recorded.</div>`;
 }
 function setupFiltersForItem(item) {
   const cases = item.cases || [];
-  $("categoryFilter").innerHTML = '<option value="">All Categories</option>' + [...new Set(cases.map(c => c[1]))].map(x => `<option>${x}</option>`).join("");
-  $("statusFilter").innerHTML = '<option value="">All Statuses</option>' + [...new Set(cases.map(c => c[3] || c[4]))].map(x => `<option>${x}</option>`).join("");
-  $("priorityFilter").innerHTML = '<option value="">All Priorities</option>' + [...new Set(cases.map(c => c[4] || c[5]))].map(x => `<option>${x}</option>`).join("");
+  $("categoryFilter").innerHTML = '<option value="">All Categories</option>' + [...new Set(cases.map(testCase => testCaseFields(testCase).category))].map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+  $("statusFilter").innerHTML = '<option value="">All Statuses</option>' + [...new Set(cases.map(testCase => testCaseFields(testCase).status))].map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
+  $("priorityFilter").innerHTML = '<option value="">All Priorities</option>' + [...new Set(cases.map(testCase => testCaseFields(testCase).priority))].map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("");
   ["testSearch", "categoryFilter", "statusFilter", "priorityFilter"].forEach(id => $(id).oninput = filterCases);
   $("testSearch").value = ""; $("categoryFilter").value = ""; $("statusFilter").value = ""; $("priorityFilter").value = "";
 }
 function filterCases() {
   if (!selectedProduct) return;
   const cases = selectedProduct.cases || [], q = $("testSearch").value.toLowerCase(), cat = $("categoryFilter").value, st = $("statusFilter").value, pri = $("priorityFilter").value;
-  renderCases(cases.filter(c => {
-    const status = c[3] || c[4], priority = c[4] || c[5];
-    return (!q || c.join(" ").toLowerCase().includes(q)) && (!cat || c[1] === cat) && (!st || status === st) && (!pri || priority === pri);
+  renderCases(cases.filter(testCase => {
+    const fields = testCaseFields(testCase);
+    return (!q || fields.searchText.toLowerCase().includes(q)) && (!cat || fields.category === cat) && (!st || fields.status === st) && (!pri || fields.priority === pri);
   }));
 }
 function renderCases(cases) {
+  const isPM250Max = selectedProduct?.id === "pm250-max";
+  $("testCaseFilters").hidden = isPM250Max;
+  $("testCaseTableContainer").hidden = isPM250Max;
+  $("pm250CategoryChartPanel").hidden = !isPM250Max;
+  $("testCasesDescription").textContent = isPM250Max
+    ? "Test cases grouped by category, with PASS and FAIL counts for each category."
+    : "Search and filter the selected validation repository.";
+  if (isPM250Max) {
+    renderPM250CategoryChart(selectedProduct.cases || []);
+    return;
+  }
+  if (categoryChart) {
+    categoryChart.destroy();
+    categoryChart = null;
+  }
+  if (selectedProduct?.id === "nursery-feeder" && nurseryFeederWorkbookState !== "loaded") {
+    const loading = nurseryFeederWorkbookState === "loading";
+    $("resultCount").textContent = loading ? "Loading workbook…" : "Workbook unavailable";
+    const message = loading
+      ? "Loading test cases from Nursery Feeder.xlsx…"
+      : `Unable to load Nursery Feeder.xlsx: ${escapeHtml(nurseryFeederWorkbookError)}`;
+    $("testCaseTable").innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:30px">${message}</td></tr>`;
+    return;
+  }
   $("resultCount").textContent = `${cases.length} test case${cases.length !== 1 ? "s" : ""}`;
-  $("testCaseTable").innerHTML = cases.length ? cases.map(c => {
-    const isArea = c.length <= 5, status = c[3] || c[4], priority = c[4] || c[5], module = isArea ? "—" : c[3], tester = isArea ? "—" : c[6];
-    return `<tr><td><strong>${c[0]}</strong></td><td>${c[1]}</td><td>${c[2]}</td><td>${module}</td><td>${badge(status)}</td><td>${priority}</td><td>${tester}</td></tr>`;
+  $("testCaseTable").innerHTML = cases.length ? cases.map(testCase => {
+    const fields = testCaseFields(testCase);
+    return `<tr><td><strong>${escapeHtml(fields.id)}</strong></td><td>${escapeHtml(fields.category)}</td><td>${escapeHtml(fields.scenario)}</td><td>${escapeHtml(fields.module)}</td><td>${badge(fields.status)}</td><td>${escapeHtml(fields.priority)}</td><td>${escapeHtml(fields.tester)}</td></tr>`;
   }).join("") : `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:30px">No matching test cases.</td></tr>`;
+}
+
+function renderPM250CategoryChart(cases) {
+  const categoryColors = ["#2563eb", "#14b8a6", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"];
+  const summaries = new Map();
+  cases.forEach(testCase => {
+    const fields = testCaseFields(testCase);
+    if (!summaries.has(fields.category)) summaries.set(fields.category, { total: 0, pass: 0, fail: 0 });
+    const summary = summaries.get(fields.category);
+    summary.total++;
+    if (["PASS", "PASSED"].includes(fields.status.toUpperCase())) summary.pass++;
+    else if (["FAIL", "FAILED"].includes(fields.status.toUpperCase())) summary.fail++;
+  });
+
+  const categories = [...summaries.entries()];
+  $("resultCount").textContent = `${cases.length} test cases · ${categories.length} categories`;
+  $("pm250CategoryLegend").innerHTML = categories.map(([category, summary], index) => `
+    <div class="pm250-category-legend-item">
+      <span class="pm250-category-swatch" style="--category-color:${categoryColors[index % categoryColors.length]}"></span>
+      <span class="pm250-category-name">${escapeHtml(category)}</span>
+      <span class="pm250-category-count">${summary.total}</span>
+      <span class="pm250-category-status pass">${summary.pass} PASS</span>
+      <span class="pm250-category-status fail">${summary.fail} FAIL</span>
+    </div>`).join("");
+
+  if (categoryChart) categoryChart.destroy();
+  const canvas = $("pm250CategoryChart");
+  if (typeof Chart === "undefined") {
+    $("pm250CategoryLegend").insertAdjacentHTML("beforebegin", '<p class="small">The category chart is unavailable because the chart library did not load.</p>');
+    return;
+  }
+  categoryChart = new Chart(canvas, {
+    type: "doughnut",
+    data: {
+      labels: categories.map(([category]) => category),
+      datasets: [{
+        data: categories.map(([, summary]) => summary.total),
+        backgroundColor: categories.map((_, index) => categoryColors[index % categoryColors.length]),
+        borderColor: "#ffffff",
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: context => ` ${context.label}: ${context.raw} test case${context.raw === 1 ? "" : "s"}`,
+            afterLabel: context => {
+              const summary = categories[context.dataIndex][1];
+              return [`PASS: ${summary.pass}`, `FAIL: ${summary.fail}`];
+            }
+          }
+        }
+      }
+    }
+  });
 }
 function showView(v) {
   document.querySelectorAll(".view").forEach(x => x.classList.remove("active"));
@@ -558,16 +798,112 @@ function renderModuleLanding(areaKey, title) {
     backBtn.onclick = () => { showView("overview"); $("breadcrumb").textContent = "Dashboard / Overview"; $("pageTitle").textContent = "V&V Overview"; };
   }
 }
+
+const factoryHandoverProjects = [
+  { name: "Lean PM125V3 Wi-Fi", progress: 90 },
+  { name: "Fish Feeder", progress: 0 },
+  { name: "Nursery Feeder", progress: 0 }
+];
+
+function renderFactoryHandoverPortfolioTable() {
+  const summaryEl = $("factoryHandoverPortfolioStatusSummary");
+  const tableEl = $("factoryHandoverPortfolioTable");
+  if (!summaryEl || !tableEl) return;
+
+  const summary = factoryHandoverProjects.reduce((counts, project) => {
+    counts.total++;
+    if (project.progress === 100) counts.completed++;
+    else if (project.progress > 0) counts.inProgress++;
+    else counts.open++;
+    return counts;
+  }, { total: 0, open: 0, inProgress: 0, completed: 0, rejected: 0 });
+
+  summaryEl.innerHTML = `<table class="status-summary-table" aria-label="Factory Handover project status summary">
+    <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
+    <tbody><tr><td>${summary.total}</td><td class="status-summary-open">${summary.open}</td><td class="status-summary-progress">${summary.inProgress}</td><td class="status-summary-completed">${summary.completed}</td><td class="status-summary-rejected">${summary.rejected}</td></tr></tbody>
+  </table>`;
+
+  tableEl.innerHTML = `<table class="portfolio-items-table factory-handover-projects-table">
+    <thead><tr><th scope="col">Project</th><th scope="col">Overall Progress</th></tr></thead>
+    <tbody>${factoryHandoverProjects.map(({ name, progress }) => `<tr>
+      <td class="portfolio-item-name">${name}</td>
+      <td><div class="products-data-progress">
+        <div class="progress-track-modern"><div class="progress-fill-modern" style="width:${progress}%"></div></div>
+        <span class="progress-text-modern">${progress}%</span>
+      </div></td>
+    </tr>`).join("")}</tbody>
+  </table>`;
+}
+
+function renderFactoryHandoverPage() {
+  const view = $("factoryHandoverView");
+  if (!view) return;
+  $("breadcrumb").textContent = "Dashboard / Factory Handover";
+  $("pageTitle").textContent = "Factory Handover";
+
+  view.innerHTML = `
+    <div class="page-intro factory-handover-page-intro">
+      <div>
+        <h2>Factory Handover</h2>
+        <p>Factory handover progress by project.</p>
+      </div>
+    </div>
+    <div class="two-column factory-handover-projects">
+      ${factoryHandoverProjects.map(({ name, progress }) => `
+        <article class="panel project-card factory-handover-card">
+          <div class="panel-header">
+            <div>
+              <h3>${name}</h3>
+              <p>Click to view factory handover details</p>
+            </div>
+          </div>
+          <div class="factory-handover-progress">
+            <div class="factory-handover-progress-label">
+              <span>Overall Progress</span>
+              <strong>${progress}%</strong>
+            </div>
+            <div class="progress-track" role="progressbar" aria-label="${name} factory handover progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}">
+              <div class="progress-fill" style="width:${progress}%"></div>
+            </div>
+          </div>
+        </article>
+      `).join("")}
+    </div>`;
+}
+
+window.handleFactoryHandoverProject = function (projectName) {
+  if (projectName) openFactoryHandoverDetails(projectName);
+};
+
+window.openFactoryHandoverDetails = function (projectName) {
+  const view = $("factoryHandoverView");
+  if (!view) return;
+
+  view.innerHTML = `
+    <div class="page-intro">
+      <div>
+        <h2>${projectName}</h2>
+        <p>Factory Handover Details</p>
+      </div>
+      <button type="button" class="back-link" onclick="renderFactoryHandoverPage()">← Back to Factory Handover</button>
+    </div>
+    <div class="factory-handover-empty-details" aria-label="${projectName} Factory Handover details"></div>`;
+  $("breadcrumb").textContent = `Dashboard / Factory Handover / ${projectName}`;
+  $("pageTitle").textContent = projectName;
+}
+
 document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => {
   const v = btn.dataset.view; showView(v);
-  const title = v === "overview" ? "V&V Overview" : v === "products" ? "Products" : v === "fieldIssues" ? "Field Issues" : v === "rnd" ? "R&D" : v === "nit" ? "NIT" : v === "partQualification" ? "Part Qualification" : v.charAt(0).toUpperCase() + v.slice(1);
+  const title = v === "overview" ? "V&V Overview" : v === "products" ? "Products" : v === "fieldIssues" ? "Field Issues" : v === "rnd" ? "R&D" : v === "thirdParty" ? "3rd Party" : v === "nit" ? "NIT" : v === "partQualification" ? "Part Qualification" : v.charAt(0).toUpperCase() + v.slice(1);
   $("breadcrumb").textContent = `Dashboard / ${title}`; $("pageTitle").textContent = title;
   if (v === "products") renderProductsPage();
   if (v === "sourcing") renderModuleLanding("sourcing", "Sourcing");
   if (v === "fieldIssues") renderModuleLanding("fieldIssues", "Field Issues");
   if (v === "quality") renderModuleLanding("quality", "Quality");
   if (v === "rnd") renderModuleLanding("rnd", "R&D");
+  if (v === "thirdParty") renderModuleLanding("thirdParty", "3rd Party");
   if (v === "nit") renderModuleLanding("nit", "NIT");
+  if (v === "factoryHandover") renderFactoryHandoverPage();
   if (v === "partQualification") {
     partQualificationReturnToPortfolio = false;
     renderPartQualificationPage();
@@ -1651,3 +1987,4 @@ document.querySelectorAll(".overview-navigation-card").forEach(card => {
   };
 });
 renderOverview();
+loadNurseryFeederWorkbook();

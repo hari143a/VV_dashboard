@@ -467,6 +467,128 @@ select {
   overflow: auto
 }
 
+#testCaseFilters[hidden],
+#testCaseTableContainer[hidden],
+#pm250CategoryChartPanel[hidden] {
+  display: none;
+}
+
+.pm250-category-chart-panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) minmax(260px, 1fr);
+  align-items: center;
+  gap: 30px;
+  padding: 8px 12px 12px;
+}
+
+.pm250-category-chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 300px;
+}
+
+.pm250-status-legend {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pm250-status-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pm250-status-dot,
+.pm250-category-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 50%;
+}
+
+.pm250-status-dot.pass {
+  background: #16a34a;
+}
+
+.pm250-status-dot.fail {
+  background: #dc2626;
+}
+
+.pm250-category-legend {
+  display: grid;
+  gap: 8px;
+}
+
+.pm250-category-legend-item {
+  display: grid;
+  grid-template-columns: 10px minmax(90px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfdff;
+  font-size: 12px;
+}
+
+.pm250-category-swatch {
+  background: var(--category-color);
+}
+
+.pm250-category-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pm250-category-count {
+  color: var(--muted);
+}
+
+.pm250-category-status {
+  min-width: 46px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.pm250-category-status.pass {
+  color: #15803d;
+}
+
+.pm250-category-status.fail {
+  color: #b91c1c;
+}
+
+@media(max-width:700px) {
+  .pm250-category-chart-panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 4px 0 0;
+  }
+
+  .pm250-category-chart-wrap {
+    max-width: 340px;
+    height: 260px;
+    margin: 0 auto;
+  }
+
+  .pm250-category-legend-item {
+    grid-template-columns: 10px minmax(64px, 1fr) auto auto auto;
+    gap: 6px;
+    padding: 9px 8px;
+  }
+
+  .pm250-category-status {
+    min-width: 0;
+    font-size: 9px;
+  }
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -1156,6 +1278,16 @@ tbody tr:hover {
   width: 20%;
 }
 
+.portfolio-summary-card .factory-handover-projects-table th:first-child,
+.portfolio-summary-card .factory-handover-projects-table td:first-child {
+  width: 55%;
+}
+
+.portfolio-summary-card .factory-handover-projects-table th:last-child,
+.portfolio-summary-card .factory-handover-projects-table td:last-child {
+  width: 45%;
+}
+
 .portfolio-items-table .portfolio-item-name {
   color: #086bb5 !important;
   font-weight: 700;
@@ -1751,7 +1883,106 @@ body {
 }
 
 .validation-status-kpis {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.factory-handover-projects {
+  margin-top: 20px;
+}
+
+.factory-handover-page-intro {
+  align-items: center;
+  gap: 18px;
+}
+
+.factory-handover-card {
+  min-height: 244px;
+  padding: 19px;
+}
+
+.factory-handover-card .panel-header h3 {
+  color: #1769e0;
+  font-size: 18px;
+}
+
+.factory-handover-card .panel-header p {
+  margin: 5px 0 0;
+  font-size: 11px;
+}
+
+.factory-handover-progress {
+  padding: 20px 24px;
+}
+
+.factory-handover-progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.factory-handover-progress-label strong {
+  color: #1769e0;
+  font-size: 16px;
+}
+
+.factory-handover-card .progress-track {
+  height: 6px;
+  background: #e1ebf6;
+  margin-bottom: 20px;
+}
+
+.factory-handover-project-select {
+  width: auto;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.factory-handover-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 24px 10px;
+}
+
+.factory-handover-card-actions .back-link {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.factory-handover-empty-details {
+  min-height: 320px;
+}
+
+@media (max-width: 600px) {
+  .factory-handover-page-intro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .factory-handover-projects {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .factory-handover-card {
+    padding: 19px;
+  }
+
+  .factory-handover-progress {
+    padding: 20px 24px;
+  }
+
+  .factory-handover-project-select {
+    width: 100%;
+  }
 }
 
 .kpi-content {

@@ -36,6 +36,7 @@
             Issues</span></button>
         <button type="button" class="nav-item" data-view="rnd"><span class="nav-icon">💡</span><span>R&amp;D</span></button>
         <button type="button" class="nav-item" data-view="nit"><span class="nav-icon">⚙</span><span>NIT</span></button>
+        <button type="button" class="nav-item" data-view="thirdParty"><span class="nav-icon">◈</span><span>3rd Party</span></button>
 
         <div class="nav-section">
           <div class="nav-section-title">PRODUCT ENGINEERING</div>
@@ -114,7 +115,7 @@
             <div class="panel">
               <div class="panel-header">
                 <div>
-                  <h3>Part Qualification</h3>
+                <h3>Product Engineering Status</h3>
                   <p id="peSubtitle">Loading projects...</p>
                 </div>
               </div>
@@ -277,6 +278,24 @@
           </div>
         </div>
 
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <button type="button" class="section-accordion-toggle" id="thirdPartySectionToggle"
+                aria-expanded="false" aria-controls="thirdPartyExpandableList">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon rnd">◈</span>
+                <span class="section-accordion-copy">
+                  <h3>3rd Party</h3>
+                  <p>External testing and third-party validation activities.</p>
+                </span>
+              </button>
+              <div id="thirdPartyStatusSummary" class="portfolio-status-summary"></div>
+            </div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="thirdPartyExpandableList"></div></div></div>
+          </div>
+        </div>
+
       </section>
 
       <section id="productPortfolioView" class="view">
@@ -302,6 +321,23 @@
               <div id="peProjectStatusSummary" class="portfolio-status-summary"></div>
             </div>
             <div class="section-accordion-content"><div class="section-accordion-inner"><div id="peProjectExpandableList"></div></div></div>
+          </div>
+        </div>
+        <div class="area-section portfolio-summary-section">
+          <div class="panel portfolio-summary-card">
+            <div class="area-title">
+              <button type="button" class="section-accordion-toggle" id="factoryHandoverPortfolioToggle"
+                aria-expanded="false" aria-controls="factoryHandoverPortfolioTable">
+                <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                <span class="area-icon nit">⚙</span>
+                <span class="section-accordion-copy">
+                  <h3>Factory Handover</h3>
+                  <p>Factory handover progress across all projects.</p>
+                </span>
+              </button>
+              <div id="factoryHandoverPortfolioStatusSummary" class="portfolio-status-summary"></div>
+            </div>
+            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="factoryHandoverPortfolioTable"></div></div></div>
           </div>
         </div>
 
@@ -380,10 +416,10 @@
           <div class="panel-header">
             <div>
               <h3>Test Cases</h3>
-              <p>Search and filter the selected validation repository.</p>
+              <p id="testCasesDescription">Search and filter the selected validation repository.</p>
             </div><span class="result-count" id="resultCount"></span>
           </div>
-          <div class="filters"><input id="testSearch" type="search"
+          <div class="filters" id="testCaseFilters"><input id="testSearch" type="search"
               placeholder="Search TC ID, scenario, module..."><select id="categoryFilter">
               <option value="">All Categories</option>
             </select><select id="statusFilter">
@@ -391,7 +427,7 @@
             </select><select id="priorityFilter">
               <option value="">All Priorities</option>
             </select></div>
-          <div class="table-scroll">
+          <div class="table-scroll" id="testCaseTableContainer">
             <table>
               <thead>
                 <tr>
@@ -407,6 +443,18 @@
               <tbody id="testCaseTable"></tbody>
             </table>
           </div>
+          <div id="pm250CategoryChartPanel" class="pm250-category-chart-panel" hidden>
+            <div class="pm250-category-chart-wrap">
+              <canvas id="pm250CategoryChart" role="img" aria-label="PM 250 Max test case counts by category"></canvas>
+            </div>
+            <div>
+              <div class="pm250-status-legend" aria-label="Status colors">
+                <span><i class="pm250-status-dot pass"></i>PASS</span>
+                <span><i class="pm250-status-dot fail"></i>FAIL</span>
+              </div>
+              <div id="pm250CategoryLegend" class="pm250-category-legend"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -414,8 +462,10 @@
       <section id="fieldIssuesView" class="view module-view"></section>
       <section id="qualityView" class="view module-view"></section>
       <section id="rndView" class="view module-view"></section>
+      <section id="thirdPartyView" class="view module-view"></section>
       <section id="nitView" class="view module-view"></section>
       <section id="partQualificationView" class="view module-view"></section>
+      <section id="factoryHandoverView" class="view module-view"></section>
     </main>
   </div>
   <script src="app.js"></script>
