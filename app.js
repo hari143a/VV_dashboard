@@ -670,14 +670,19 @@ function renderPEPortfolioTable() {
   const projectStats = loaded.map(key => {
     const pd = loadedProjectsData[key];
     const parts = pd.parts || [];
-    const total   = parts.length;
-    const design  = parts.filter(p => p.designDone).length;
-    const pq      = parts.filter(p => p.pqDone).length;
-    const src     = parts.filter(p => p.srcDone).length;
-    const sq      = parts.filter(p => p.sqDone).length;
-    const samp    = parts.filter(p => p.sampDone).length;
-    const fac     = parts.filter(p => p.facDone).length;
-    const progress = total > 0 ? Math.round((design + pq + src + sq + samp + fac) / (total * 6) * 100) : 0;
+    const total = pd.stats?.totalParts ?? parts.length;
+    const stageCompleted = (stage, fallback) => pd.summary.find(row => row.stage === stage)?.completed
+      ?? parts.filter(fallback).length;
+    const design = stageCompleted("Design Readiness", part => part.designDone);
+    const pq = stageCompleted("Part Qualification", part => part.pqDone);
+    const src = stageCompleted("Sourcing Readiness", part => part.srcDone);
+    const sq = stageCompleted("Supplier Qualification", part => part.sqDone);
+    const samp = stageCompleted("Sample / Lot Procurement", part => part.sampDone);
+    const fac = stageCompleted("Factory Handover", part => part.facDone);
+    const summaryTotal = pd.stats?.overallProgress;
+    const progress = summaryTotal ?? (total > 0
+      ? Math.round((design + pq + src + sq + samp + fac) / (total * 6) * 100)
+      : 0);
     return { key, pd, total, design, pq, src, sq, samp, fac, progress };
   });
 
@@ -769,7 +774,44 @@ function renderProductValidationData(item) {
   const getColor = (v) => v <= 20 ? "var(--danger)" : v <= 79 ? "#f97316" : "var(--success)";
   $("executionPercent").textContent = m.progress + "%"; $("executionBar").style.width = m.progress + "%";
   $("executionBar").style.background = getColor(m.progress);
+  renderFailureModule(item.cases || []);
   setupFiltersForItem(item); renderCases(item.cases || []);
+}
+function renderFailureModule(cases) {
+  const categories = new Map();
+  let failedTotal = 0;
+  cases.forEach(testCase => {
+    const fields = testCaseFields(testCase);
+    const category = categories.get(fields.category) || { total: 0, failed: 0 };
+    category.total++;
+    if (["FAIL", "FAILED"].includes(fields.status.trim().toUpperCase())) {
+      category.failed++;
+      failedTotal++;
+    }
+    categories.set(fields.category, category);
+  });
+  const failedCategories = [...categories.entries()].filter(([, summary]) => summary.failed > 0);
+  const failureModule = document.querySelector(".failure-module");
+  failureModule.hidden = failedTotal === 0;
+  if (failedTotal === 0) {
+    $("failureCategorySummary").replaceChildren();
+    $("failureCount").textContent = "";
+    return;
+  }
+  $("failureCount").textContent = `${failedTotal} failed test case${failedTotal === 1 ? "" : "s"}`;
+  $("failureCategorySummary").innerHTML = failedCategories.map(([name, summary]) => {
+    const rate = pct(summary.failed, summary.total);
+    return `<div class="failure-category-item">
+      <div class="failure-category-heading">
+        <span class="failure-category-name">${escapeHtml(name)}</span>
+        <span class="failure-category-count">${summary.failed} / ${summary.total} failed</span>
+      </div>
+      <div class="failure-bar" role="progressbar" aria-label="${escapeHtml(name)} failure rate" aria-valuenow="${rate}" aria-valuemin="0" aria-valuemax="100">
+        <span style="width:${rate}%"></span>
+      </div>
+      <span class="failure-category-rate">${rate}% failure rate</span>
+    </div>`;
+  }).join("");
 }
 function setupFiltersForItem(item) {
   const cases = item.cases || [];
