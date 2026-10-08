@@ -49,15 +49,13 @@ const areaData = {
 
 const products = [
   {
-    id: "pm250-max", name: "PM 250 Max", status: "In Validation", description: "Validation program for PM 250 Max feeding platform and associated controls.", tests: 250, executed: 50, pass: 42, fail: 8, blocked: 0, categories: [{ name: "Functional", pass: 94, fail: 1 }, { name: "Performance", pass: 88, fail: 2 }, { name: "Safety", pass: 100, fail: 0 }, { name: "Reliability", pass: 84, fail: 2 }, { name: "Serviceability", pass: 90, fail: 0 }], cases: [
-      ["PM-001", "Functional", "Power-on sequence", "Controller", "PASS", "High", "Venkatesh"], ["PM-002", "Performance", "Feed rate accuracy", "Dispenser", "PASS", "High", "Akash"], ["PM-003", "Safety", "Emergency stop", "Safety", "PASS", "High", "Kiran"], ["PM-004", "Reliability", "Extended dispensing cycle", "Dispenser", "FAIL", "High", "Akash"], ["PM-005", "Performance", "Motor current profile", "Motor", "FAIL", "Medium", "Venkatesh"]]
+    id: "pm250-max", name: "PM 250 Max", status: "In Validation", description: "Validation program for PM 250 Max feeding platform and associated controls.", tests: 0, executed: 0, pass: 0, fail: 0, blocked: 0, cases: []
   },
   {
     id: "nursery-feeder", name: "Nursery Feeder", status: "In Validation", description: "Nursery Feeder validation covering movement, feeding, safety, reliability and serviceability.", tests: 0, executed: 0, pass: 0, fail: 0, blocked: 0, cases: []
   },
   {
-    id: "fish-feeder", name: "Fish Feeder", status: "Open", description: "Validation dashboard for Fish Feeder monitoring and pond data workflows.", tests: 130, executed: 0, pass: 0, fail: 0, blocked: 0, categories: [{ name: "Functional", pass: 0, fail: 0 }, { name: "Performance", pass: 0, fail: 0 }, { name: "Safety", pass: 0, fail: 0 }, { name: "Reliability", pass: 0, fail: 0 }, { name: "Data", pass: 0, fail: 0 }], cases: [
-      ["FF-001", "Functional", "Sensor data acquisition", "Sensors", "NOT EXECUTED", "High", "Akash"], ["FF-002", "Data", "Timestamp verification", "Cloud", "NOT EXECUTED", "High", "Venkatesh"], ["FF-003", "Performance", "Data sync latency", "Cloud", "NOT EXECUTED", "Medium", "Kiran"]]
+    id: "fish-feeder", name: "Fish Feeder", status: "Open", description: "Validation dashboard for Fish Feeder monitoring and pond data workflows.", tests: 0, executed: 0, pass: 0, fail: 0, blocked: 0, cases: []
   }
 ];
 
@@ -75,6 +73,12 @@ const badge = s => {
 let nurseryFeederWorkbookPromise = null;
 let nurseryFeederWorkbookState = "loading";
 let nurseryFeederWorkbookError = "";
+let pm250WorkbookPromise = null;
+let pm250WorkbookState = "loading";
+let pm250WorkbookError = "";
+let fishFeederWorkbookPromise = null;
+let fishFeederWorkbookState = "loading";
+let fishFeederWorkbookError = "";
 
 function testCaseFields(testCase) {
   if (testCase.length <= 5) {
@@ -121,6 +125,70 @@ function sheetCategoryName(sheetName) {
   return labels[cleaned] || cleaned;
 }
 
+function parseTestCaseWorkbook(workbook, excludedSheets = [], requiredSheetSuffix = "", includedSheets = [], options = {}) {
+  const excluded = new Set(excludedSheets.map(name => name.trim().toLowerCase()));
+  const included = new Set(includedSheets.map(name => name.trim().toLowerCase()));
+  const sheets = workbook.SheetNames.filter(name => {
+    const normalizedName = name.trim().toLowerCase();
+    return !excluded.has(normalizedName)
+      && (!requiredSheetSuffix || normalizedName.endsWith(requiredSheetSuffix.toLowerCase()) || included.has(normalizedName));
+  });
+  const cases = [];
+  const seenCaseIds = new Set();
+  const normalizeHeader = value => String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  sheets.forEach(sheetName => {
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+      header: 1,
+      defval: "",
+      blankrows: false
+    });
+    const headerRowIndex = rows.findIndex(row => row.some(value => ["tcid", "testcaseid"].includes(normalizeHeader(value))));
+    if (headerRowIndex < 0) throw new Error(`The "${sheetName}" sheet is missing a test case ID header.`);
+
+    const headers = rows[headerRowIndex].map(normalizeHeader);
+    const column = (...names) => {
+      for (const name of names) {
+        const index = headers.indexOf(normalizeHeader(name));
+        if (index >= 0) return index;
+      }
+      return -1;
+    };
+    const tcIdColumn = column("TC ID", "Test Case ID");
+    if (tcIdColumn < 0) throw new Error(`The "${sheetName}" sheet is missing a test case ID header.`);
+    const categoryColumn = column("Category");
+    const sheetCategory = sheetCategoryName(sheetName);
+    rows.slice(headerRowIndex + 1).forEach(row => {
+      const id = String(row[tcIdColumn] ?? "").trim();
+      if (!id) return;
+      const normalizedId = id.toUpperCase();
+      if (options.deduplicateCaseIds && seenCaseIds.has(normalizedId)) return;
+      seenCaseIds.add(normalizedId);
+
+      const value = (...names) => {
+        const index = column(...names);
+        return index < 0 ? "" : String(row[index] ?? "").trim();
+      };
+      const category = options.useRowCategory && categoryColumn >= 0 ? value("Category") || sheetCategory : sheetCategory;
+      const status = value("Status").toUpperCase() || "NOT EXECUTED";
+      cases.push([
+        id,
+        category,
+        value("Test Scenario"),
+        value("Test Place", "Place of testing"),
+        status,
+        value("Priority"),
+        value("Tester", "Tester's name"),
+        ...row.map(cell => String(cell ?? "").trim())
+      ]);
+    });
+  });
+
+  if (!sheets.length) throw new Error("The workbook does not contain any test-category sheets.");
+  if (!cases.length) throw new Error("No test cases with a TC ID were found in the workbook.");
+  return cases;
+}
+
 async function loadNurseryFeederWorkbook() {
   if (nurseryFeederWorkbookPromise) return nurseryFeederWorkbookPromise;
 
@@ -128,51 +196,11 @@ async function loadNurseryFeederWorkbook() {
     try {
       if (typeof XLSX === "undefined") throw new Error("The Excel workbook reader is unavailable.");
 
-      const response = await fetch("excel files/Verifications & validations/Products/Nursery Feeder.xlsx");
+      const response = await fetch("excel files/Verifications & validations/Products/Nursery_Feeder_Test_Cases.xlsx");
       if (!response.ok) throw new Error(`Workbook request failed with HTTP ${response.status}.`);
 
       const workbook = XLSX.read(await response.arrayBuffer(), { type: "array" });
-      const sheets = workbook.SheetNames.filter(name => !["y", "index"].includes(name.trim().toLowerCase()));
-      const cases = [];
-
-      sheets.forEach(sheetName => {
-        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-          header: 1,
-          defval: "",
-          blankrows: false
-        });
-        const normalizeHeader = value => String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-        const headerRowIndex = rows.findIndex(row => row.some(value => normalizeHeader(value) === "tcid"));
-        if (headerRowIndex < 0) throw new Error(`The "${sheetName}" sheet is missing a TC ID header.`);
-
-        const headers = rows[headerRowIndex].map(normalizeHeader);
-        const column = name => headers.indexOf(normalizeHeader(name));
-        const tcIdColumn = column("TC ID");
-        const category = sheetCategoryName(sheetName);
-        rows.slice(headerRowIndex + 1).forEach(row => {
-          const id = String(row[tcIdColumn] ?? "").trim();
-          if (!id) return;
-
-          const value = name => {
-            const index = column(name);
-            return index < 0 ? "" : String(row[index] ?? "").trim();
-          };
-          const status = value("Status") || "NOT EXECUTED";
-          cases.push([
-            id,
-            category,
-            value("Test Scenario"),
-            value("Test Place"),
-            status,
-            "",
-            "",
-            row.map(cell => String(cell ?? "").trim())
-          ]);
-        });
-      });
-
-      if (!sheets.length) throw new Error("The workbook does not contain any test-category sheets.");
-      if (!cases.length) throw new Error("No test cases with a TC ID were found in the workbook.");
+      const cases = parseTestCaseWorkbook(workbook, [], "_test_cases", ["Basic_Functional_test"]);
 
       const nurseryFeeder = products.find(product => product.id === "nursery-feeder");
       nurseryFeeder.cases = cases;
@@ -186,12 +214,88 @@ async function loadNurseryFeederWorkbook() {
     } catch (error) {
       nurseryFeederWorkbookState = "error";
       nurseryFeederWorkbookError = error.message;
-      console.error("Unable to load Nursery Feeder test cases from its workbook.", error);
+      console.error("Unable to load Nursery Feeder test cases from Nursery_Feeder_Test_Cases.xlsx.", error);
       refreshNurseryFeederViews(products.find(product => product.id === "nursery-feeder"));
     }
   })();
 
   return nurseryFeederWorkbookPromise;
+}
+
+async function loadPM250Workbook() {
+  if (pm250WorkbookPromise) return pm250WorkbookPromise;
+
+  pm250WorkbookPromise = (async () => {
+    try {
+      if (typeof XLSX === "undefined") throw new Error("The Excel workbook reader is unavailable.");
+
+      const response = await fetch("excel files/Verifications & validations/Products/PM250_Max_Test_Cases.xlsx");
+      if (!response.ok) throw new Error(`Workbook request failed with HTTP ${response.status}.`);
+
+      const workbook = XLSX.read(await response.arrayBuffer(), { type: "array" });
+      const cases = parseTestCaseWorkbook(workbook);
+      const pm250 = products.find(product => product.id === "pm250-max");
+      pm250.cases = cases;
+      pm250.tests = cases.length;
+      pm250.executed = cases.filter(testCase => isCountedAsExecuted(testCaseFields(testCase).status)).length;
+      pm250.pass = cases.filter(testCase => ["PASS", "PASSED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+      pm250.fail = cases.filter(testCase => ["FAIL", "FAILED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+      pm250.blocked = cases.filter(testCase => testCaseFields(testCase).status.toUpperCase() === "BLOCKED").length;
+      pm250WorkbookState = "loaded";
+      refreshPM250Views(pm250);
+    } catch (error) {
+      pm250WorkbookState = "error";
+      pm250WorkbookError = error.message;
+      console.error("Unable to load PM 250 Max test cases from its workbook.", error);
+      refreshPM250Views(products.find(product => product.id === "pm250-max"));
+    }
+  })();
+
+  return pm250WorkbookPromise;
+}
+
+async function loadFishFeederWorkbook() {
+  if (fishFeederWorkbookPromise) return fishFeederWorkbookPromise;
+
+  fishFeederWorkbookPromise = (async () => {
+    try {
+      if (typeof XLSX === "undefined") throw new Error("The Excel workbook reader is unavailable.");
+
+      const response = await fetch("excel files/Verifications & validations/Products/Fish_Feeder_Test_Cases.xlsx");
+      if (!response.ok) throw new Error(`Workbook request failed with HTTP ${response.status}.`);
+
+      const workbook = XLSX.read(await response.arrayBuffer(), { type: "array" });
+      const cases = parseTestCaseWorkbook(workbook, ["Tests_Info", "defect tracker"], "", [], {
+        deduplicateCaseIds: true
+      });
+      const fishFeeder = products.find(product => product.id === "fish-feeder");
+      fishFeeder.cases = cases;
+      fishFeeder.tests = cases.length;
+      fishFeeder.executed = cases.filter(testCase => isCountedAsExecuted(testCaseFields(testCase).status)).length;
+      fishFeeder.pass = cases.filter(testCase => ["PASS", "PASSED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+      fishFeeder.fail = cases.filter(testCase => ["FAIL", "FAILED"].includes(testCaseFields(testCase).status.toUpperCase())).length;
+      fishFeeder.blocked = cases.filter(testCase => testCaseFields(testCase).status.toUpperCase() === "BLOCKED").length;
+      fishFeederWorkbookState = "loaded";
+      refreshFishFeederViews(fishFeeder);
+    } catch (error) {
+      fishFeederWorkbookState = "error";
+      fishFeederWorkbookError = error.message;
+      console.error("Unable to load Fish Feeder test cases from Fish_Feeder_Test_Cases.xlsx.", error);
+      refreshFishFeederViews(products.find(product => product.id === "fish-feeder"));
+    }
+  })();
+
+  return fishFeederWorkbookPromise;
+}
+
+function refreshPM250Views(pm250) {
+  renderValidationPortfolioKpis();
+  renderExpandableList(products, "productsExpandableList", null, "productsStatusSummary");
+  renderPortfolioCharts();
+  if ($("productsView")?.classList.contains("active")) renderProductsPage();
+  if (selectedProduct === pm250 && $("productView")?.classList.contains("active")) {
+    renderProductValidationData(pm250);
+  }
 }
 
 function refreshNurseryFeederViews(nurseryFeeder) {
@@ -201,6 +305,16 @@ function refreshNurseryFeederViews(nurseryFeeder) {
   if ($("productsView")?.classList.contains("active")) renderProductsPage();
   if (selectedProduct === nurseryFeeder && $("productView")?.classList.contains("active")) {
     renderProductValidationData(nurseryFeeder);
+  }
+}
+
+function refreshFishFeederViews(fishFeeder) {
+  renderValidationPortfolioKpis();
+  renderExpandableList(products, "productsExpandableList", null, "productsStatusSummary");
+  renderPortfolioCharts();
+  if ($("productsView")?.classList.contains("active")) renderProductsPage();
+  if (selectedProduct === fishFeeder && $("productView")?.classList.contains("active")) {
+    renderProductValidationData(fishFeeder);
   }
 }
 
@@ -643,7 +757,7 @@ function showDetail(item, area, name, returnToPortfolio = false) {
     if (v) document.querySelector(`.nav-item[data-view="${v}"]`)?.click();
   };
   $("breadcrumb").textContent = `Dashboard / ${area} / ${name}`; $("pageTitle").textContent = name;
-  if ($("productTitle")) $("productTitle").textContent = name; $("productDescription").textContent = item.description || "Validation item and associated test cases.";
+  $("productTitle").textContent = name;
   $("productStatus").textContent = item.status || "In Validation";
   renderProductValidationData(item);
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -655,17 +769,7 @@ function renderProductValidationData(item) {
   const getColor = (v) => v <= 20 ? "var(--danger)" : v <= 79 ? "#f97316" : "var(--success)";
   $("executionPercent").textContent = m.progress + "%"; $("executionBar").style.width = m.progress + "%";
   $("executionBar").style.background = getColor(m.progress);
-  renderFailuresFromCases(item); setupFiltersForItem(item); renderCases(item.cases || []);
-}
-
-function renderFailuresFromCases(item) {
-  const cases = item.cases || [], map = {};
-  cases.filter(testCase => ["FAIL", "FAILED"].includes(testCaseFields(testCase).status.toUpperCase())).forEach(testCase => {
-    const category = testCaseFields(testCase).category;
-    map[category] = (map[category] || 0) + 1;
-  });
-  const entries = Object.entries(map), max = Math.max(...entries.map(x => x[1]), 1);
-  $("failureList").innerHTML = entries.length ? entries.map(([name, n]) => `<div class="failure-item"><div class="failure-name">${escapeHtml(name)}</div><div class="failure-count">${n}</div><div class="failure-bar"><span style="width:${n / max * 100}%"></span></div></div>`).join("") : `<div class="small">No failures recorded.</div>`;
+  setupFiltersForItem(item); renderCases(item.cases || []);
 }
 function setupFiltersForItem(item) {
   const cases = item.cases || [];
@@ -678,35 +782,57 @@ function setupFiltersForItem(item) {
 function filterCases() {
   if (!selectedProduct) return;
   const cases = selectedProduct.cases || [], q = $("testSearch").value.toLowerCase(), cat = $("categoryFilter").value, st = $("statusFilter").value, pri = $("priorityFilter").value;
-  renderCases(cases.filter(testCase => {
+  const filteredCases = cases.filter(testCase => {
     const fields = testCaseFields(testCase);
     return (!q || fields.searchText.toLowerCase().includes(q)) && (!cat || fields.category === cat) && (!st || fields.status === st) && (!pri || fields.priority === pri);
-  }));
+  });
+  const workbookState = selectedProduct.id === "pm250-max" ? pm250WorkbookState
+    : selectedProduct.id === "nursery-feeder" ? nurseryFeederWorkbookState
+      : selectedProduct.id === "fish-feeder" ? fishFeederWorkbookState : "";
+  if (workbookState === "loaded") {
+    renderProductTestCaseTable(filteredCases);
+    $("resultCount").textContent = filteredCases.length === cases.length
+      ? `${cases.length} test cases`
+      : `${filteredCases.length} of ${cases.length} test cases`;
+    return;
+  }
+  renderCases(filteredCases);
 }
 function renderCases(cases) {
-  const isPM250Max = selectedProduct?.id === "pm250-max";
-  $("testCaseFilters").hidden = isPM250Max;
-  $("testCaseTableContainer").hidden = isPM250Max;
-  $("pm250CategoryChartPanel").hidden = !isPM250Max;
-  $("testCasesDescription").textContent = isPM250Max
-    ? "Test cases grouped by category, with PASS and FAIL counts for each category."
+  const isWorkbookProduct = ["pm250-max", "nursery-feeder", "fish-feeder"].includes(selectedProduct?.id);
+  $("testCaseFilters").hidden = false;
+  $("testCaseTableContainer").hidden = false;
+  $("pm250CategoryChartPanel").hidden = !isWorkbookProduct;
+  $("testCasesDescription").textContent = isWorkbookProduct
+    ? `Search and filter test cases from the ${selectedProduct.name} workbook.`
     : "Search and filter the selected validation repository.";
-  if (isPM250Max) {
-    renderPM250CategoryChart(selectedProduct.cases || []);
+  if (isWorkbookProduct) {
+    const workbookState = selectedProduct.id === "pm250-max" ? pm250WorkbookState
+      : selectedProduct.id === "nursery-feeder" ? nurseryFeederWorkbookState : fishFeederWorkbookState;
+    const workbookError = selectedProduct.id === "pm250-max" ? pm250WorkbookError
+      : selectedProduct.id === "nursery-feeder" ? nurseryFeederWorkbookError : fishFeederWorkbookError;
+    const workbookName = selectedProduct.id === "pm250-max" ? "PM250_Max_Test_Cases.xlsx"
+      : selectedProduct.id === "nursery-feeder" ? "Nursery_Feeder_Test_Cases.xlsx" : "Fish_Feeder_Test_Cases.xlsx";
+    if (workbookState !== "loaded") {
+      const loading = workbookState === "loading";
+      $("resultCount").textContent = loading ? "Loading workbook…" : "Workbook unavailable";
+      $("pm250CategoryLegend").textContent = loading
+        ? `Loading test cases from ${workbookName}…`
+        : `Unable to load ${workbookName}: ${workbookError}`;
+      $("testCaseTable").innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:30px">${loading ? "Loading test cases…" : `Unable to load test cases: ${escapeHtml(workbookError)}`}</td></tr>`;
+      if (categoryChart) {
+        categoryChart.destroy();
+        categoryChart = null;
+      }
+      return;
+    }
+    renderProductCategoryChart(selectedProduct.cases || []);
+    renderProductTestCaseTable(cases);
     return;
   }
   if (categoryChart) {
     categoryChart.destroy();
     categoryChart = null;
-  }
-  if (selectedProduct?.id === "nursery-feeder" && nurseryFeederWorkbookState !== "loaded") {
-    const loading = nurseryFeederWorkbookState === "loading";
-    $("resultCount").textContent = loading ? "Loading workbook…" : "Workbook unavailable";
-    const message = loading
-      ? "Loading test cases from Nursery Feeder.xlsx…"
-      : `Unable to load Nursery Feeder.xlsx: ${escapeHtml(nurseryFeederWorkbookError)}`;
-    $("testCaseTable").innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:30px">${message}</td></tr>`;
-    return;
   }
   $("resultCount").textContent = `${cases.length} test case${cases.length !== 1 ? "s" : ""}`;
   $("testCaseTable").innerHTML = cases.length ? cases.map(testCase => {
@@ -715,28 +841,47 @@ function renderCases(cases) {
   }).join("") : `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:30px">No matching test cases.</td></tr>`;
 }
 
-function renderPM250CategoryChart(cases) {
-  const categoryColors = ["#2563eb", "#14b8a6", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"];
+function renderProductTestCaseTable(cases) {
+  $("testCaseTable").innerHTML = cases.length ? cases.map(testCase => {
+    const fields = testCaseFields(testCase);
+    return `<tr><td><strong>${escapeHtml(fields.id)}</strong></td><td>${escapeHtml(fields.category)}</td><td>${escapeHtml(fields.scenario)}</td><td>${escapeHtml(fields.module)}</td><td>${badge(fields.status)}</td><td>${escapeHtml(fields.priority)}</td><td>${escapeHtml(fields.tester)}</td></tr>`;
+  }).join("") : `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:30px">No matching test cases.</td></tr>`;
+}
+
+function renderProductCategoryChart(cases) {
+  const categoryColors = ["#2563eb", "#14b8a6", "#8b5cf6", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16", "#ef4444", "#6366f1", "#0f766e"];
+  const categoryColor = index => categoryColors[index] || `hsl(${(index * 137.508) % 360} 68% 44%)`;
   const summaries = new Map();
   cases.forEach(testCase => {
     const fields = testCaseFields(testCase);
-    if (!summaries.has(fields.category)) summaries.set(fields.category, { total: 0, pass: 0, fail: 0 });
+    if (!summaries.has(fields.category)) summaries.set(fields.category, { total: 0, executed: 0, pass: 0, fail: 0 });
     const summary = summaries.get(fields.category);
     summary.total++;
+    if (isCountedAsExecuted(fields.status)) summary.executed++;
     if (["PASS", "PASSED"].includes(fields.status.toUpperCase())) summary.pass++;
     else if (["FAIL", "FAILED"].includes(fields.status.toUpperCase())) summary.fail++;
   });
 
   const categories = [...summaries.entries()];
-  $("resultCount").textContent = `${cases.length} test cases · ${categories.length} categories`;
-  $("pm250CategoryLegend").innerHTML = categories.map(([category, summary], index) => `
+  $("resultCount").textContent = `${cases.length} test cases`;
+  $("pm250CategoryLegend").innerHTML = `
+    <div class="pm250-category-legend-header" aria-hidden="true">
+      <span></span><span>CATEGORY</span><span>TOTAL</span><span>PASS</span><span>FAIL</span><span>PROGRESS</span>
+    </div>
+    ${categories.map(([category, summary], index) => `
     <div class="pm250-category-legend-item">
-      <span class="pm250-category-swatch" style="--category-color:${categoryColors[index % categoryColors.length]}"></span>
+      <span class="pm250-category-swatch" style="--category-color:${categoryColor(index)}"></span>
       <span class="pm250-category-name">${escapeHtml(category)}</span>
-      <span class="pm250-category-count">${summary.total}</span>
+      <span class="pm250-category-count" aria-label="${summary.total} total test cases">${summary.total}</span>
       <span class="pm250-category-status pass">${summary.pass} PASS</span>
       <span class="pm250-category-status fail">${summary.fail} FAIL</span>
-    </div>`).join("");
+      <span class="pm250-category-progress" aria-label="${pct(summary.executed, summary.total)}% executed">
+        <span class="pm250-category-progress-track" role="progressbar" aria-valuenow="${pct(summary.executed, summary.total)}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHtml(category)} progress">
+          <span class="pm250-category-progress-fill" style="width:${pct(summary.executed, summary.total)}%"></span>
+        </span>
+        <span class="pm250-category-progress-label">${pct(summary.executed, summary.total)}%</span>
+      </span>
+    </div>`).join("")}`;
 
   if (categoryChart) categoryChart.destroy();
   const canvas = $("pm250CategoryChart");
@@ -744,13 +889,14 @@ function renderPM250CategoryChart(cases) {
     $("pm250CategoryLegend").insertAdjacentHTML("beforebegin", '<p class="small">The category chart is unavailable because the chart library did not load.</p>');
     return;
   }
+  canvas.setAttribute("aria-label", `${selectedProduct.name} test case counts by category`);
   categoryChart = new Chart(canvas, {
     type: "doughnut",
     data: {
       labels: categories.map(([category]) => category),
       datasets: [{
         data: categories.map(([, summary]) => summary.total),
-        backgroundColor: categories.map((_, index) => categoryColors[index % categoryColors.length]),
+        backgroundColor: categories.map((_, index) => categoryColor(index)),
         borderColor: "#ffffff",
         borderWidth: 3,
         hoverOffset: 6
@@ -775,6 +921,7 @@ function renderPM250CategoryChart(cases) {
     }
   });
 }
+
 function showView(v) {
   document.querySelectorAll(".view").forEach(x => x.classList.remove("active"));
   const el = $(v + "View");
@@ -1982,3 +2129,5 @@ document.querySelectorAll(".overview-navigation-card").forEach(card => {
 });
 renderOverview();
 loadNurseryFeederWorkbook();
+loadPM250Workbook();
+loadFishFeederWorkbook();

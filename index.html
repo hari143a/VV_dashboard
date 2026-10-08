@@ -132,6 +132,7 @@
       <section id="validationPortfolioView" class="view">
         <div class="section-heading validation-portfolio-overview-heading">
           <h2>VERIFICATION &amp; VALIDATION overview</h2>
+          <button type="button" class="back-link" id="validationPortfolioBackToOverview">Back to Overview →</button>
         </div>
         <div class="kpi-grid validation-status-kpis" id="validationPortfolioKpis"></div>
         <div class="page-intro">
@@ -139,7 +140,6 @@
             <h2>Validation Portfolio</h2>
             <p>Every validation area is displayed using the same test-case metrics.</p>
           </div>
-          <button type="button" class="back-link" id="validationPortfolioBackToOverview">Back to Overview →</button>
         </div>
         <div class="area-section products-section">
           <div class="panel products-card">
@@ -385,8 +385,8 @@
           <button type="button" class="back-link" id="backToOverview">Back to Overview →</button>
         </div>
         <div class="product-hero">
-          <div><span class="eyebrow">VALIDATION ITEM</span>
-            <p id="productDescription"></p>
+          <div>
+            <h2 id="productTitle"></h2>
           </div><span class="product-status" id="productStatus"></span>
         </div>
         <div class="kpi-grid" id="productKpis"></div>
@@ -401,23 +401,24 @@
             <div class="progress-fill" id="executionBar"></div>
           </div>
         </div>
-        <div class="two-column">
-          <div class="panel">
-            <div class="panel-header">
-              <div>
-                <h3>Failure Analysis</h3>
-                <p>Failed test cases grouped by category.</p>
-              </div>
-            </div>
-            <div id="failureList" class="failure-list"></div>
-          </div>
-        </div>
         <div class="panel">
           <div class="panel-header">
             <div>
               <h3>Test Cases</h3>
               <p id="testCasesDescription">Search and filter the selected validation repository.</p>
             </div><span class="result-count" id="resultCount"></span>
+          </div>
+          <div id="pm250CategoryChartPanel" class="pm250-category-chart-panel" hidden>
+            <div class="pm250-category-chart-wrap">
+              <canvas id="pm250CategoryChart" role="img" aria-label="PM 250 Max test case counts by category"></canvas>
+            </div>
+            <div>
+              <div class="pm250-status-legend" aria-label="Status colors">
+                <span><i class="pm250-status-dot pass"></i>PASS</span>
+                <span><i class="pm250-status-dot fail"></i>FAIL</span>
+              </div>
+              <div id="pm250CategoryLegend" class="pm250-category-legend"></div>
+            </div>
           </div>
           <div class="filters" id="testCaseFilters"><input id="testSearch" type="search"
               placeholder="Search TC ID, scenario, module..."><select id="categoryFilter">
@@ -442,18 +443,6 @@
               </thead>
               <tbody id="testCaseTable"></tbody>
             </table>
-          </div>
-          <div id="pm250CategoryChartPanel" class="pm250-category-chart-panel" hidden>
-            <div class="pm250-category-chart-wrap">
-              <canvas id="pm250CategoryChart" role="img" aria-label="PM 250 Max test case counts by category"></canvas>
-            </div>
-            <div>
-              <div class="pm250-status-legend" aria-label="Status colors">
-                <span><i class="pm250-status-dot pass"></i>PASS</span>
-                <span><i class="pm250-status-dot fail"></i>FAIL</span>
-              </div>
-              <div id="pm250CategoryLegend" class="pm250-category-legend"></div>
-            </div>
           </div>
         </div>
       </section>

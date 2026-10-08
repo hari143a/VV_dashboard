@@ -519,14 +519,38 @@ select {
   background: #dc2626;
 }
 
+.pm250-status-dot.blocked {
+  background: #8b5cf6;
+}
+
+.pm250-status-dot.not-executed {
+  background: #94a3b8;
+}
+
 .pm250-category-legend {
   display: grid;
   gap: 8px;
 }
 
+.pm250-category-legend-header {
+  display: grid;
+  grid-template-columns: 10px minmax(90px, 1fr) auto auto auto minmax(115px, .8fr);
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.pm250-category-legend-header span:nth-child(2) {
+  text-align: left;
+}
+
 .pm250-category-legend-item {
   display: grid;
-  grid-template-columns: 10px minmax(90px, 1fr) auto auto auto;
+  grid-template-columns: 10px minmax(90px, 1fr) auto auto auto minmax(90px, .8fr);
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -564,7 +588,51 @@ select {
   color: #b91c1c;
 }
 
+.pm250-category-progress {
+  display: grid;
+  grid-template-columns: minmax(45px, 1fr);
+  justify-items: stretch;
+  gap: 3px;
+  min-width: 115px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pm250-category-progress-track {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #e1ebf6;
+  overflow: hidden;
+}
+
+.pm250-category-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1687d9;
+  transition: width .25s ease;
+}
+
 @media(max-width:700px) {
+  .pm250-category-legend-header {
+    display: none;
+  }
+
+  .pm250-category-legend-item {
+    grid-template-columns: 10px minmax(0, 1fr) auto auto auto;
+  }
+
+  .pm250-category-progress {
+    grid-column: 2 / -1;
+    grid-template-columns: minmax(45px, 1fr);
+    width: 100%;
+    min-width: 0;
+  }
+
   .pm250-category-chart-panel {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
@@ -575,12 +643,6 @@ select {
     max-width: 340px;
     height: 260px;
     margin: 0 auto;
-  }
-
-  .pm250-category-legend-item {
-    grid-template-columns: 10px minmax(64px, 1fr) auto auto auto;
-    gap: 6px;
-    padding: 9px 8px;
   }
 
   .pm250-category-status {
@@ -1885,6 +1947,10 @@ body {
 }
 
 .validation-portfolio-overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-top: 2px;
 }
 
@@ -2172,6 +2238,10 @@ body {
 }
 
 @media(max-width:700px) {
+  .validation-portfolio-overview-heading {
+    align-items: flex-start;
+  }
+
   .validation-status-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr))
   }
