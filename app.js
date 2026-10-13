@@ -1123,6 +1123,12 @@ window.openFactoryHandoverDetails = function (projectName) {
 document.querySelectorAll(".nav-section-toggle").forEach(toggle => {
   toggle.onclick = () => {
     const expanded = toggle.getAttribute("aria-expanded") !== "true";
+    if (expanded) {
+      document.querySelectorAll(".nav-section-toggle[aria-expanded='true']").forEach(openToggle => {
+        openToggle.setAttribute("aria-expanded", "false");
+        openToggle.closest(".nav-subsection")?.classList.remove("is-expanded");
+      });
+    }
     toggle.setAttribute("aria-expanded", String(expanded));
     toggle.closest(".nav-subsection")?.classList.toggle("is-expanded", expanded);
   };
