@@ -138,12 +138,24 @@ select {
 }
 
 .nav-section-title {
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  color: #71839d;
-  padding: 0 12px 2px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #c9dce9;
+  padding: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
   white-space: nowrap;
+  border-radius: 10px;
+}
+
+.nav > .nav-section > .nav-section-title {
+  padding: 0 12px 2px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 0;
 }
 
 .nav-section~.nav-item {
@@ -171,7 +183,15 @@ select {
   cursor: pointer;
 }
 
+.nav-section-toggle:hover,
+.nav-section-toggle:focus-visible {
+  background: linear-gradient(90deg, rgba(22, 135, 217, .30), rgba(53, 184, 210, .10));
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--eruvaka-green);
+}
+
 .nav-section-chevron {
+  margin-left: auto;
   font-size: 18px;
   line-height: 1;
   transition: transform .2s ease;
@@ -1847,7 +1867,7 @@ body {
 }
 
 .nav-section-title {
-  color: #ffffff
+  color: #c9dce9;
 }
 
 .nav-item {
