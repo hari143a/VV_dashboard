@@ -28,24 +28,40 @@
         </div>
         <button type="button" class="nav-item" data-view="products"><span
             class="nav-icon">▦</span><span>Products</span></button>
-        <div class="nav-subsection">
+        <div class="nav-subsection is-expanded">
           <div class="nav-section">
-            <div class="nav-section-title">SAFETY REQUIREMENTS</div>
+            <button type="button" class="nav-section-title nav-section-toggle" aria-expanded="true"
+              aria-controls="cftRequestsNavItems">
+              <span>CFT REQUESTS</span>
+              <span class="nav-section-chevron" aria-hidden="true">›</span>
+            </button>
           </div>
-          <button type="button" class="nav-item" data-view="sourcing"><span
-              class="nav-icon">◫</span><span>Sourcing</span></button>
-          <button type="button" class="nav-item" data-view="quality"><span
-              class="nav-icon">✓</span><span>Quality</span></button>
-          <button type="button" class="nav-item" data-view="fieldIssues"><span class="nav-icon">⚗</span><span>Field
-              Issues</span></button>
-          <button type="button" class="nav-item" data-view="rnd"><span class="nav-icon">💡</span><span>R&amp;D</span></button>
+          <div class="nav-subsection-content" id="cftRequestsNavItems">
+            <div class="nav-subsection-inner">
+              <button type="button" class="nav-item" data-view="sourcing"><span
+                  class="nav-icon">◫</span><span>Sourcing</span></button>
+              <button type="button" class="nav-item" data-view="quality"><span
+                  class="nav-icon">✓</span><span>Quality</span></button>
+              <button type="button" class="nav-item" data-view="fieldIssues"><span class="nav-icon">⚗</span><span>Field
+                  Issues</span></button>
+              <button type="button" class="nav-item" data-view="rnd"><span class="nav-icon">💡</span><span>R&amp;D</span></button>
+            </div>
+          </div>
         </div>
-        <div class="nav-subsection">
+        <div class="nav-subsection is-expanded">
           <div class="nav-section">
-            <div class="nav-section-title">COLLABORATION</div>
+            <button type="button" class="nav-section-title nav-section-toggle" aria-expanded="true"
+              aria-controls="collaborationNavItems">
+              <span>COLLABORATION</span>
+              <span class="nav-section-chevron" aria-hidden="true">›</span>
+            </button>
           </div>
-          <button type="button" class="nav-item" data-view="nit"><span class="nav-icon">⚙</span><span>NIT</span></button>
-          <button type="button" class="nav-item" data-view="thirdParty"><span class="nav-icon">◈</span><span>3rd Party</span></button>
+          <div class="nav-subsection-content" id="collaborationNavItems">
+            <div class="nav-subsection-inner">
+              <button type="button" class="nav-item" data-view="nit"><span class="nav-icon">⚙</span><span>NIT</span></button>
+              <button type="button" class="nav-item" data-view="thirdParty"><span class="nav-icon">◈</span><span>3rd Party</span></button>
+            </div>
+          </div>
         </div>
 
         <div class="nav-section">
@@ -56,9 +72,6 @@
         <button type="button" class="nav-item" data-view="factoryHandover"><span class="nav-icon">⚙</span><span>Factory
             Handover</span></button>
 
-        <div class="nav-section">
-          <div class="nav-section-title">ISSUE REGISTRATION</div>
-        </div>
         <button type="button" class="nav-item" data-view="operationsRisks"><span
             class="nav-icon">⚠</span><span>Operations Risks</span></button>
         <button type="button" class="nav-item" data-view="csRisks"><span class="nav-icon">⚠</span><span>CS
@@ -208,7 +221,7 @@
                 <span class="section-accordion-chevron" aria-hidden="true">›</span>
                 <span class="area-icon field">⚠</span>
                 <span class="section-accordion-copy">
-                  <h3>SAFETY REQUIREMENTS</h3>
+                  <h3>CFT REQUESTS</h3>
                   <p>Safety-related validation activities.</p>
                 </span>
               </button>

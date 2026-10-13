@@ -1120,6 +1120,14 @@ window.openFactoryHandoverDetails = function (projectName) {
   $("pageTitle").textContent = projectName;
 }
 
+document.querySelectorAll(".nav-section-toggle").forEach(toggle => {
+  toggle.onclick = () => {
+    const expanded = toggle.getAttribute("aria-expanded") !== "true";
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.closest(".nav-subsection")?.classList.toggle("is-expanded", expanded);
+  };
+});
+
 document.querySelectorAll(".nav-item").forEach(btn => btn.onclick = () => {
   const v = btn.dataset.view; showView(v);
   const title = v === "overview" ? "V&V Overview" : v === "products" ? "Products" : v === "fieldIssues" ? "Field Issues" : v === "rnd" ? "R&D" : v === "thirdParty" ? "3rd Party" : v === "nit" ? "NIT" : v === "partQualification" ? "Part Qualification" : v.charAt(0).toUpperCase() + v.slice(1);
