@@ -341,21 +341,33 @@ function renderOverview() {
   renderExpandableList(products, "productsExpandableList", null, "productsStatusSummary");
   [
     "productsSectionToggle",
-    "sourcingSectionToggle",
-    "fieldIssuesSectionToggle",
-    "qualitySectionToggle",
-    "rndSectionToggle",
-    "thirdPartySectionToggle",
-    "nitSectionToggle",
+    "safetyRequirementsSectionToggle",
+    "collaborationSectionToggle",
+    "sourcingAreaToggle",
+    "qualityAreaToggle",
+    "fieldIssuesAreaToggle",
+    "rndAreaToggle",
+    "nitAreaToggle",
+    "thirdPartyAreaToggle",
     "peProjectSectionToggle",
     "factoryHandoverPortfolioToggle"
   ].forEach(bindSectionAccordion);
+  renderAggregatedStatusSummary([
+    ...areaData.sourcing,
+    ...areaData.quality,
+    ...areaData.fieldIssues,
+    ...areaData.rnd
+  ], "safetyRequirementsStatusSummary", "Safety Requirements");
+  renderAggregatedStatusSummary([
+    ...areaData.nit,
+    ...areaData.thirdParty
+  ], "collaborationStatusSummary", "Collaboration");
   renderExpandableList(areaData.sourcing, "sourcingExpandableList", null, "sourcingStatusSummary");
-  renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", null, "fieldIssuesStatusSummary");
   renderExpandableList(areaData.quality, "qualityExpandableList", null, "qualityStatusSummary");
+  renderExpandableList(areaData.fieldIssues, "fieldIssuesExpandableList", null, "fieldIssuesStatusSummary");
   renderExpandableList(areaData.rnd, "rndExpandableList", null, "rndStatusSummary");
-  renderExpandableList(areaData.thirdParty, "thirdPartyExpandableList", null, "thirdPartyStatusSummary");
   renderExpandableList(areaData.nit, "nitExpandableList", null, "nitStatusSummary");
+  renderExpandableList(areaData.thirdParty, "thirdPartyExpandableList", null, "thirdPartyStatusSummary");
   renderFactoryHandoverPortfolioTable();
   renderPortfolioCharts();
   // Auto-load ALL Excel projects from projectsConfig so PE chart renders on the overview page.
@@ -400,9 +412,13 @@ function bindSectionAccordion(toggleId) {
 
   toggle.onclick = () => {
     const expanded = toggle.getAttribute("aria-expanded") !== "true";
-    if (expanded) {
+    if (expanded && toggle.dataset.accordionIndependent !== "true") {
       const view = toggle.closest(".view");
-      view?.querySelectorAll('.section-accordion-toggle[aria-expanded="true"]').forEach(openToggle => {
+      const scope = toggle.dataset.accordionScope;
+      const selector = scope
+        ? `.section-accordion-toggle[data-accordion-scope="${scope}"][aria-expanded="true"]`
+        : '.section-accordion-toggle[aria-expanded="true"]';
+      view?.querySelectorAll(selector).forEach(openToggle => {
         if (openToggle === toggle) return;
         openToggle.setAttribute("aria-expanded", "false");
         openToggle.closest(".panel")?.classList.remove("is-expanded");
@@ -426,15 +442,7 @@ function renderProductsPage() {
 }
 
 function renderExpandableList(items, containerId, countId, summaryId = null) {
-  let total = items.length, open = 0, inProgress = 0, parked = 0, complete = 0, rejects = 0;
-  items.forEach(x => {
-    let s = (x.status || "").toLowerCase();
-    if (s.includes("open")) open++;
-    else if (s.includes("progress") || s.includes("in validation")) inProgress++;
-    else if (s.includes("park")) parked++;
-    else if (s.includes("complete")) complete++;
-    else if (s.includes("reject")) rejects++;
-  });
+  const { total, open, inProgress, parked, complete, rejects } = getValidationStatusCounts(items);
 
   if (countId && $(countId)) {
     $(countId).innerHTML = `<span style="font-size:12px; color:#6b7280; font-weight:normal;">Total: <strong style="color:#111827">${total}</strong> &nbsp;|&nbsp; Open: <strong style="color:#111827">${open}</strong> &nbsp;|&nbsp; In Progress: <strong style="color:#1769e0">${inProgress}</strong> &nbsp;|&nbsp; Parked: <strong style="color:#7656ad">${parked}</strong> &nbsp;|&nbsp; Completed: <strong style="color:var(--success)">${complete}</strong> &nbsp;|&nbsp; Rejected: <strong style="color:var(--danger)">${rejects}</strong></span>`;
@@ -559,6 +567,29 @@ function renderExpandableList(items, containerId, countId, summaryId = null) {
       </div>
     </div>`;
   }).join("");
+}
+
+function getValidationStatusCounts(items) {
+  const counts = { total: items.length, open: 0, inProgress: 0, parked: 0, complete: 0, rejects: 0 };
+  items.forEach(item => {
+    const status = (item.status || "").toLowerCase();
+    if (status.includes("open")) counts.open++;
+    else if (status.includes("progress") || status.includes("in validation")) counts.inProgress++;
+    else if (status.includes("park")) counts.parked++;
+    else if (status.includes("complete")) counts.complete++;
+    else if (status.includes("reject")) counts.rejects++;
+  });
+  return counts;
+}
+
+function renderAggregatedStatusSummary(items, containerId, label) {
+  const summaryEl = $(containerId);
+  if (!summaryEl) return;
+  const { total, open, inProgress, parked, complete, rejects } = getValidationStatusCounts(items);
+  summaryEl.innerHTML = `<table class="status-summary-table" aria-label="${label} status summary">
+    <thead><tr><th scope="col">Total</th><th class="status-summary-open" scope="col">Open</th><th class="status-summary-progress" scope="col">In Progress</th><th class="status-summary-parked" scope="col">Parked</th><th class="status-summary-completed" scope="col">Completed</th><th class="status-summary-rejected" scope="col">Rejected</th></tr></thead>
+    <tbody><tr><td>${total}</td><td class="status-summary-open">${open}</td><td class="status-summary-progress">${inProgress}</td><td class="status-summary-parked">${parked}</td><td class="status-summary-completed">${complete}</td><td class="status-summary-rejected">${rejects}</td></tr></tbody>
+  </table>`;
 }
 
 window.toggleExpand = function(containerId, index) {
@@ -964,7 +995,21 @@ function renderProductCategoryChart(cases) {
   });
 }
 
+function resetValidationPortfolioAccordions() {
+  const validationPortfolio = $("validationPortfolioView");
+  if (!validationPortfolio) return;
+
+  validationPortfolio.querySelectorAll(
+    '.section-accordion-toggle[data-accordion-scope="validation-groups"], ' +
+    '.section-accordion-toggle[data-accordion-scope="validation-areas"]'
+  ).forEach(toggle => {
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.closest(".panel")?.classList.remove("is-expanded");
+  });
+}
+
 function showView(v) {
+  resetValidationPortfolioAccordions();
   document.querySelectorAll(".view").forEach(x => x.classList.remove("active"));
   const el = $(v + "View");
   if (el) el.classList.add("active");

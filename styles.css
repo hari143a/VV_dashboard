@@ -150,6 +150,15 @@ select {
   padding-left: 28px;
 }
 
+.nav-subsection .nav-section {
+  margin: 8px 0 2px;
+  padding-left: 12px;
+}
+
+.nav-subsection .nav-item {
+  padding-left: 40px;
+}
+
 .nav-hint {
   font-size: 11px;
   line-height: 1.45;
@@ -1119,14 +1128,16 @@ tbody tr:hover {
 }
 
 .products-section .products-card,
-.portfolio-summary-section .portfolio-summary-card {
+.portfolio-summary-section .portfolio-summary-card,
+.validation-group-section .validation-group-card {
   padding: 0;
   margin-bottom: 0;
   overflow: hidden;
 }
 
 .products-section .area-title,
-.portfolio-summary-section .area-title {
+.portfolio-summary-section .area-title,
+.validation-group-section .area-title {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.5fr);
   gap: 16px;
@@ -1267,6 +1278,7 @@ tbody tr:hover {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
+  overflow: hidden;
   transition: grid-template-rows .3s ease, opacity .25s ease;
 }
 
@@ -1276,13 +1288,48 @@ tbody tr:hover {
   opacity: 1;
 }
 
+.validation-group-card.is-expanded > .section-accordion-content {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
 .section-accordion-inner {
   min-height: 0;
   overflow: hidden;
 }
 
+.validation-group-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.validation-child-sections {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+}
+
+.validation-child-sections .area-section {
+  margin-bottom: 0;
+}
+
+.validation-child-sections .area-title {
+  margin-bottom: 0;
+  padding: 8px 12px;
+  background: #eef8fc;
+}
+
+.validation-child-table {
+  padding: 0 12px;
+}
+
+.portfolio-summary-card.is-expanded .validation-child-table {
+  padding-bottom: 12px;
+}
+
 .products-card .portfolio-items-table,
-.portfolio-summary-card .portfolio-items-table {
+.portfolio-summary-card .portfolio-items-table,
+.validation-group-card .portfolio-items-table {
   min-width: 0;
   width: 100%;
   table-layout: fixed;
@@ -1446,7 +1493,8 @@ tbody tr:hover {
 
 @media(max-width:760px) {
   .products-section .area-title,
-  .portfolio-summary-section .area-title {
+  .portfolio-summary-section .area-title,
+  .validation-group-section .area-title {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }

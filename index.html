@@ -28,15 +28,25 @@
         </div>
         <button type="button" class="nav-item" data-view="products"><span
             class="nav-icon">▦</span><span>Products</span></button>
-        <button type="button" class="nav-item" data-view="sourcing"><span
-            class="nav-icon">◫</span><span>Sourcing</span></button>
-        <button type="button" class="nav-item" data-view="quality"><span
-            class="nav-icon">✓</span><span>Quality</span></button>
-        <button type="button" class="nav-item" data-view="fieldIssues"><span class="nav-icon">⚗</span><span>Field
-            Issues</span></button>
-        <button type="button" class="nav-item" data-view="rnd"><span class="nav-icon">💡</span><span>R&amp;D</span></button>
-        <button type="button" class="nav-item" data-view="nit"><span class="nav-icon">⚙</span><span>NIT</span></button>
-        <button type="button" class="nav-item" data-view="thirdParty"><span class="nav-icon">◈</span><span>3rd Party</span></button>
+        <div class="nav-subsection">
+          <div class="nav-section">
+            <div class="nav-section-title">SAFETY REQUIREMENTS</div>
+          </div>
+          <button type="button" class="nav-item" data-view="sourcing"><span
+              class="nav-icon">◫</span><span>Sourcing</span></button>
+          <button type="button" class="nav-item" data-view="quality"><span
+              class="nav-icon">✓</span><span>Quality</span></button>
+          <button type="button" class="nav-item" data-view="fieldIssues"><span class="nav-icon">⚗</span><span>Field
+              Issues</span></button>
+          <button type="button" class="nav-item" data-view="rnd"><span class="nav-icon">💡</span><span>R&amp;D</span></button>
+        </div>
+        <div class="nav-subsection">
+          <div class="nav-section">
+            <div class="nav-section-title">COLLABORATION</div>
+          </div>
+          <button type="button" class="nav-item" data-view="nit"><span class="nav-icon">⚙</span><span>NIT</span></button>
+          <button type="button" class="nav-item" data-view="thirdParty"><span class="nav-icon">◈</span><span>3rd Party</span></button>
+        </div>
 
         <div class="nav-section">
           <div class="nav-section-title">PRODUCT ENGINEERING</div>
@@ -145,6 +155,7 @@
           <div class="panel products-card">
             <div class="area-title products-area-title">
               <button type="button" class="section-accordion-toggle" id="productsSectionToggle"
+                data-accordion-scope="validation-groups"
                 aria-expanded="false" aria-controls="productsExpandableList">
                 <span class="section-accordion-chevron" aria-hidden="true">›</span>
                 <span class="area-icon products">▤</span>
@@ -188,111 +199,165 @@
           </div>
         </div>
 
-        <div class="area-section portfolio-summary-section">
-          <div class="panel portfolio-summary-card">
-            <div class="area-title">
-              <button type="button" class="section-accordion-toggle" id="sourcingSectionToggle"
-                aria-expanded="false" aria-controls="sourcingExpandableList">
-                <span class="section-accordion-chevron" aria-hidden="true">›</span>
-                <span class="area-icon sourcing">🛒</span>
-                <span class="section-accordion-copy">
-                  <h3>Sourcing</h3>
-                  <p>Sourced components/items requiring validation.</p>
-                </span>
-              </button>
-              <div id="sourcingStatusSummary" class="portfolio-status-summary"></div>
-            </div>
-            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="sourcingExpandableList"></div></div></div>
-          </div>
-        </div>
-
-        <div class="area-section portfolio-summary-section">
-          <div class="panel portfolio-summary-card">
-            <div class="area-title">
-              <button type="button" class="section-accordion-toggle" id="fieldIssuesSectionToggle"
-                aria-expanded="false" aria-controls="fieldIssuesExpandableList">
+        <div class="area-section validation-group-section">
+          <div class="panel validation-group-card">
+            <div class="area-title validation-group-title">
+              <button type="button" class="section-accordion-toggle" id="safetyRequirementsSectionToggle"
+                data-accordion-scope="validation-groups"
+                aria-expanded="false" aria-controls="safetyRequirementsContent">
                 <span class="section-accordion-chevron" aria-hidden="true">›</span>
                 <span class="area-icon field">⚠</span>
                 <span class="section-accordion-copy">
-                  <h3>Field Issues</h3>
-                  <p>Field issues with corrective-action validation.</p>
+                  <h3>SAFETY REQUIREMENTS</h3>
+                  <p>Safety-related validation activities.</p>
                 </span>
               </button>
-              <div id="fieldIssuesStatusSummary" class="portfolio-status-summary"></div>
+              <div id="safetyRequirementsStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="fieldIssuesExpandableList"></div></div></div>
+            <div class="section-accordion-content" id="safetyRequirementsContent">
+              <div class="validation-group-inner">
+                <div class="validation-child-sections">
+                  <div class="area-section portfolio-summary-section">
+                    <div class="panel portfolio-summary-card">
+                      <div class="area-title">
+                        <button type="button" class="section-accordion-toggle" id="sourcingAreaToggle"
+                          data-accordion-scope="validation-areas" aria-expanded="false" aria-controls="sourcingAreaContent">
+                          <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                          <span class="area-icon sourcing">🛒</span>
+                          <span class="section-accordion-copy">
+                            <h3>Sourcing</h3>
+                            <p>Sourced components/items requiring validation.</p>
+                          </span>
+                        </button>
+                        <div id="sourcingStatusSummary" class="portfolio-status-summary"></div>
+                      </div>
+                      <div class="section-accordion-content" id="sourcingAreaContent">
+                        <div class="section-accordion-inner validation-child-table"><div id="sourcingExpandableList"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="area-section portfolio-summary-section">
+                    <div class="panel portfolio-summary-card">
+                      <div class="area-title">
+                        <button type="button" class="section-accordion-toggle" id="qualityAreaToggle"
+                          data-accordion-scope="validation-areas" aria-expanded="false" aria-controls="qualityAreaContent">
+                          <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                          <span class="area-icon quality">✓</span>
+                          <span class="section-accordion-copy">
+                            <h3>Quality</h3>
+                            <p>Quality verification and inspection activities.</p>
+                          </span>
+                        </button>
+                        <div id="qualityStatusSummary" class="portfolio-status-summary"></div>
+                      </div>
+                      <div class="section-accordion-content" id="qualityAreaContent">
+                        <div class="section-accordion-inner validation-child-table"><div id="qualityExpandableList"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="area-section portfolio-summary-section">
+                    <div class="panel portfolio-summary-card">
+                      <div class="area-title">
+                        <button type="button" class="section-accordion-toggle" id="fieldIssuesAreaToggle"
+                          data-accordion-scope="validation-areas" aria-expanded="false" aria-controls="fieldIssuesAreaContent">
+                          <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                          <span class="area-icon field">⚠</span>
+                          <span class="section-accordion-copy">
+                            <h3>Field Issues</h3>
+                            <p>Field issues with corrective-action validation.</p>
+                          </span>
+                        </button>
+                        <div id="fieldIssuesStatusSummary" class="portfolio-status-summary"></div>
+                      </div>
+                      <div class="section-accordion-content" id="fieldIssuesAreaContent">
+                        <div class="section-accordion-inner validation-child-table"><div id="fieldIssuesExpandableList"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="area-section portfolio-summary-section">
+                    <div class="panel portfolio-summary-card">
+                      <div class="area-title">
+                        <button type="button" class="section-accordion-toggle" id="rndAreaToggle"
+                          data-accordion-scope="validation-areas" aria-expanded="false" aria-controls="rndAreaContent">
+                          <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                          <span class="area-icon rnd">💡</span>
+                          <span class="section-accordion-copy">
+                            <h3>R&amp;D</h3>
+                            <p>Research and development validation activities.</p>
+                          </span>
+                        </button>
+                        <div id="rndStatusSummary" class="portfolio-status-summary"></div>
+                      </div>
+                      <div class="section-accordion-content" id="rndAreaContent">
+                        <div class="section-accordion-inner validation-child-table"><div id="rndExpandableList"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="area-section portfolio-summary-section">
-          <div class="panel portfolio-summary-card">
-            <div class="area-title">
-              <button type="button" class="section-accordion-toggle" id="qualitySectionToggle"
-                aria-expanded="false" aria-controls="qualityExpandableList">
-                <span class="section-accordion-chevron" aria-hidden="true">›</span>
-                <span class="area-icon quality">✓</span>
-                <span class="section-accordion-copy">
-                  <h3>Quality</h3>
-                  <p>Quality verification and inspection activities.</p>
-                </span>
-              </button>
-              <div id="qualityStatusSummary" class="portfolio-status-summary"></div>
-            </div>
-            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="qualityExpandableList"></div></div></div>
-          </div>
-        </div>
-
-        <div class="area-section portfolio-summary-section">
-          <div class="panel portfolio-summary-card">
-            <div class="area-title">
-              <button type="button" class="section-accordion-toggle" id="rndSectionToggle"
-                aria-expanded="false" aria-controls="rndExpandableList">
-                <span class="section-accordion-chevron" aria-hidden="true">›</span>
-                <span class="area-icon rnd">💡</span>
-                <span class="section-accordion-copy">
-                  <h3>R&amp;D</h3>
-                  <p>Research and development validation activities.</p>
-                </span>
-              </button>
-              <div id="rndStatusSummary" class="portfolio-status-summary"></div>
-            </div>
-            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="rndExpandableList"></div></div></div>
-          </div>
-        </div>
-
-        <div class="area-section portfolio-summary-section">
-          <div class="panel portfolio-summary-card">
-            <div class="area-title">
-              <button type="button" class="section-accordion-toggle" id="nitSectionToggle"
-                aria-expanded="false" aria-controls="nitExpandableList">
+        <div class="area-section validation-group-section">
+          <div class="panel validation-group-card">
+            <div class="area-title validation-group-title">
+              <button type="button" class="section-accordion-toggle" id="collaborationSectionToggle"
+                data-accordion-scope="validation-groups"
+                aria-expanded="false" aria-controls="collaborationContent">
                 <span class="section-accordion-chevron" aria-hidden="true">›</span>
                 <span class="area-icon nit">⚙</span>
                 <span class="section-accordion-copy">
-                  <h3>NIT</h3>
-                  <p>New Item Testing validation activities.</p>
+                  <h3>COLLABORATION</h3>
+                  <p>Collaboration and new-item validation activities.</p>
                 </span>
               </button>
-              <div id="nitStatusSummary" class="portfolio-status-summary"></div>
+              <div id="collaborationStatusSummary" class="portfolio-status-summary"></div>
             </div>
-            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="nitExpandableList"></div></div></div>
-          </div>
-        </div>
-
-        <div class="area-section portfolio-summary-section">
-          <div class="panel portfolio-summary-card">
-            <div class="area-title">
-              <button type="button" class="section-accordion-toggle" id="thirdPartySectionToggle"
-                aria-expanded="false" aria-controls="thirdPartyExpandableList">
-                <span class="section-accordion-chevron" aria-hidden="true">›</span>
-                <span class="area-icon rnd">◈</span>
-                <span class="section-accordion-copy">
-                  <h3>3rd Party</h3>
-                  <p>External testing and third-party validation activities.</p>
-                </span>
-              </button>
-              <div id="thirdPartyStatusSummary" class="portfolio-status-summary"></div>
+            <div class="section-accordion-content" id="collaborationContent">
+              <div class="validation-group-inner">
+                <div class="validation-child-sections">
+                  <div class="area-section portfolio-summary-section">
+                    <div class="panel portfolio-summary-card">
+                      <div class="area-title">
+                        <button type="button" class="section-accordion-toggle" id="nitAreaToggle"
+                          data-accordion-scope="validation-areas" aria-expanded="false" aria-controls="nitAreaContent">
+                          <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                          <span class="area-icon nit">⚙</span>
+                          <span class="section-accordion-copy">
+                            <h3>NIT</h3>
+                            <p>New Item Testing validation activities.</p>
+                          </span>
+                        </button>
+                        <div id="nitStatusSummary" class="portfolio-status-summary"></div>
+                      </div>
+                      <div class="section-accordion-content" id="nitAreaContent">
+                        <div class="section-accordion-inner validation-child-table"><div id="nitExpandableList"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="area-section portfolio-summary-section">
+                    <div class="panel portfolio-summary-card">
+                      <div class="area-title">
+                        <button type="button" class="section-accordion-toggle" id="thirdPartyAreaToggle"
+                          data-accordion-scope="validation-areas" aria-expanded="false" aria-controls="thirdPartyAreaContent">
+                          <span class="section-accordion-chevron" aria-hidden="true">›</span>
+                          <span class="area-icon rnd">◈</span>
+                          <span class="section-accordion-copy">
+                            <h3>3rd Party</h3>
+                            <p>External testing and third-party validation activities.</p>
+                          </span>
+                        </button>
+                        <div id="thirdPartyStatusSummary" class="portfolio-status-summary"></div>
+                      </div>
+                      <div class="section-accordion-content" id="thirdPartyAreaContent">
+                        <div class="section-accordion-inner validation-child-table"><div id="thirdPartyExpandableList"></div></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="section-accordion-content"><div class="section-accordion-inner"><div id="thirdPartyExpandableList"></div></div></div>
           </div>
         </div>
 
