@@ -40,7 +40,11 @@ select {
 
 .sidebar {
   width: 300px;
-  background: #020d1c;
+  background:
+    radial-gradient(ellipse 53.333% 18.605% at 50% 9.3%, rgba(14, 67, 124, 0.4), rgba(6, 34, 69, 0.22) 60%, transparent),
+    radial-gradient(ellipse 50% 17.44% at 80% 34.9%, rgba(20, 82, 150, 0.45), rgba(8, 41, 82, 0.22) 55%, transparent),
+    radial-gradient(ellipse 53.333% 18.6% at 73.3% 65.1%, rgba(12, 63, 118, 0.38), rgba(5, 28, 56, 0.2) 65%, transparent),
+    linear-gradient(160.75deg, #020e1d 0%, #041a35 28%, #062349 52%, #03162e 78%, #010a17 100%);
   color: #dce6f5;
   padding: 0 16px 22px;
   position: fixed;
@@ -57,12 +61,15 @@ select {
   border-left: 0;
   border-top: 0;
   border-bottom: 0;
-  box-shadow: 4px 0 24px rgba(2, 10, 24, 0.50);
+  box-shadow:
+    4px 0 24px rgba(2, 10, 24, 0.50),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22),
+    inset -1px 0 1px rgba(56, 189, 248, 0.22);
   z-index: 30;
 }
 
-/* Ensure all sidebar contents stay above the animated backdrop */
-.sidebar > *:not(.sidebar-liquid-backdrop) {
+/* Keep sidebar contents stacked above the background */
+.sidebar > * {
   position: relative;
   z-index: 2;
 }
@@ -310,6 +317,7 @@ select {
   font-size: 23px;
   font-weight: 800;
   background: linear-gradient(135deg, #0d2342 0%, #1769e0 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
@@ -1139,13 +1147,6 @@ tbody tr:hover {
     min-height: auto;
   }
 
-  .sidebar-liquid-backdrop {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
   .app-shell {
     display: block
   }
@@ -1869,12 +1870,16 @@ body {
 }
 
 /* =========================================================
-   LIQUID-GLASS SIDEBAR (OnePlus Nord 5 inspired)
+   SIDEBAR
    ========================================================= */
 
 .sidebar {
   width: 300px;
-  background: #020d1c;
+  background:
+    radial-gradient(ellipse 53.333% 18.605% at 50% 9.3%, rgba(14, 67, 124, 0.4), rgba(6, 34, 69, 0.22) 60%, transparent),
+    radial-gradient(ellipse 50% 17.44% at 80% 34.9%, rgba(20, 82, 150, 0.45), rgba(8, 41, 82, 0.22) 55%, transparent),
+    radial-gradient(ellipse 53.333% 18.6% at 73.3% 65.1%, rgba(12, 63, 118, 0.38), rgba(5, 28, 56, 0.2) 65%, transparent),
+    linear-gradient(160.75deg, #020e1d 0%, #041a35 28%, #062349 52%, #03162e 78%, #010a17 100%);
   color: #dce6f5;
   padding: 0 16px 22px;
   position: fixed;
@@ -1891,137 +1896,17 @@ body {
   border-left: 0;
   border-top: 0;
   border-bottom: 0;
-  box-shadow: 4px 0 24px rgba(2, 10, 24, 0.50);
+  box-shadow:
+    4px 0 24px rgba(2, 10, 24, 0.50),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22),
+    inset -1px 0 1px rgba(56, 189, 248, 0.22);
   z-index: 30;
 }
 
-/* Ensure all sidebar contents stay above the animated backdrop */
-.sidebar > *:not(.sidebar-liquid-backdrop) {
+/* Keep sidebar contents stacked above the background */
+.sidebar > * {
   position: relative;
   z-index: 2;
-}
-
-/* Clipped liquid backdrop container behind all sidebar navigation */
-.sidebar-liquid-backdrop {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-  user-select: none;
-}
-
-.liquid-glass-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  pointer-events: none;
-}
-
-/* Organic Liquid Layer Floating Animations */
-@keyframes floatTopLobe {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(2px, 8px, 0) scale(1.02);
-  }
-  100% {
-    transform: translate3d(-2px, -6px, 0) scale(0.98);
-  }
-}
-
-@keyframes floatMidLobe {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-3px, 10px, 0) scale(1.025);
-  }
-  100% {
-    transform: translate3d(2px, -8px, 0) scale(0.975);
-  }
-}
-
-@keyframes floatLowerLobe {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(3px, -10px, 0) scale(1.02);
-  }
-  100% {
-    transform: translate3d(-2px, 8px, 0) scale(0.98);
-  }
-}
-
-@keyframes floatBottomWave {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -6px, 0);
-  }
-  100% {
-    transform: translate3d(0, 5px, 0);
-  }
-}
-
-@keyframes pulseCaustic {
-  0% {
-    transform: translate(291px, 575px) scale(0.92);
-    opacity: 0.85;
-  }
-  50% {
-    transform: translate(291px, 575px) scale(1.14);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(291px, 575px) scale(0.95);
-    opacity: 0.9;
-  }
-}
-
-.liquid-layer-top {
-  animation: floatTopLobe 18s ease-in-out infinite alternate;
-  transform-origin: 150px 100px;
-}
-
-.liquid-layer-mid {
-  animation: floatMidLobe 22s ease-in-out infinite alternate;
-  transform-origin: 240px 300px;
-}
-
-.liquid-layer-lower {
-  animation: floatLowerLobe 20s ease-in-out infinite alternate;
-  transform-origin: 220px 560px;
-}
-
-.liquid-layer-bottom {
-  animation: floatBottomWave 16s ease-in-out infinite alternate;
-  transform-origin: 150px 800px;
-}
-
-.liquid-caustic-flare {
-  animation: pulseCaustic 6s ease-in-out infinite alternate;
-  transform-origin: 291px 575px;
-}
-
-/* Glass Specular Surface Sheen */
-.liquid-glass-sheen {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(56, 189, 248, 0.04) 25%, transparent 60%),
-    radial-gradient(ellipse at 88% 6%, rgba(56, 189, 248, 0.12) 0%, transparent 50%);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.22),
-    inset -1px 0 1px rgba(56, 189, 248, 0.22);
-  border-radius: inherit;
 }
 
 /* Brand Area */
@@ -2096,6 +1981,37 @@ body {
   text-shadow: 0 1px 3px rgba(2, 10, 24, 0.75);
   border-bottom: none;
   background: none;
+}
+
+.nav > .nav-section > .nav-section-title.liquid-heading {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(103, 232, 249, 0.36);
+  border-radius: 9px;
+  background:
+    linear-gradient(115deg, rgba(56, 189, 248, 0.04) 20%, rgba(103, 232, 249, 0.22) 42%, rgba(192, 132, 252, 0.2) 55%, rgba(56, 189, 248, 0.04) 78%),
+    linear-gradient(115deg, rgba(8, 41, 82, 0.92), rgba(14, 67, 124, 0.72) 48%, rgba(49, 29, 93, 0.72));
+  background-size: 220% 100%, 100% 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 2px 12px rgba(56, 189, 248, 0.12);
+  animation: liquid-heading-flow 8s ease-in-out infinite alternate;
+}
+
+@keyframes liquid-heading-flow {
+  from {
+    background-position: 0% 50%, 0% 0%;
+  }
+  to {
+    background-position: 100% 50%, 0% 0%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav > .nav-section > .nav-section-title.liquid-heading {
+    animation: none;
+  }
 }
 
 /* Navigation Items */
@@ -2204,18 +2120,6 @@ body {
 .nav-section-toggle[aria-expanded="true"] .nav-section-chevron {
   transform: rotate(90deg);
   color: #38bdf8;
-}
-
-/* Reduced motion accessibility */
-@media (prefers-reduced-motion: reduce) {
-  .liquid-layer-top,
-  .liquid-layer-mid,
-  .liquid-layer-lower,
-  .liquid-layer-bottom,
-  .liquid-caustic-flare {
-    animation: none !important;
-    transform: none !important;
-  }
 }
 
 .main {

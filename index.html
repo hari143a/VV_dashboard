@@ -13,177 +13,6 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <!-- Animated Liquid-Water Glass Bubble Effect (OnePlus Nord 5 inspired) -->
-      <div class="sidebar-liquid-backdrop" aria-hidden="true">
-        <svg class="liquid-glass-svg" viewBox="0 0 300 860" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-          <defs>
-            <!-- Base deep midnight navy gradient -->
-            <linearGradient id="deepNavyBg" x1="0" y1="0" x2="300" y2="860" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#020e1d" />
-              <stop offset="28%" stop-color="#041a35" />
-              <stop offset="52%" stop-color="#062349" />
-              <stop offset="78%" stop-color="#03162e" />
-              <stop offset="100%" stop-color="#010a17" />
-            </linearGradient>
-
-            <!-- Rim Stroke Gradient 1: Top Lobe (Violet -> Electric Blue -> Cyan -> Specular White) -->
-            <linearGradient id="topRimGrad" x1="180" y1="0" x2="300" y2="200" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.3" />
-              <stop offset="22%" stop-color="#c084fc" stop-opacity="0.95" />
-              <stop offset="50%" stop-color="#38bdf8" stop-opacity="1" />
-              <stop offset="68%" stop-color="#ffffff" stop-opacity="1" />
-              <stop offset="82%" stop-color="#22d3ee" stop-opacity="0.95" />
-              <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.35" />
-            </linearGradient>
-
-            <!-- Top Lobe Volumetric Fill -->
-            <radialGradient id="topLobeFill" cx="150" cy="80" r="160" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#0e437c" stop-opacity="0.4" />
-              <stop offset="60%" stop-color="#062245" stop-opacity="0.22" />
-              <stop offset="100%" stop-color="#031224" stop-opacity="0" />
-            </radialGradient>
-
-            <!-- Rim Stroke Gradient 2: Mid-Right Bulge (Magenta -> Violet -> Electric Blue -> Cyan) -->
-            <linearGradient id="midRimGrad" x1="220" y1="190" x2="300" y2="430" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25" />
-              <stop offset="16%" stop-color="#c084fc" stop-opacity="0.9" />
-              <stop offset="38%" stop-color="#e879f9" stop-opacity="1" />
-              <stop offset="58%" stop-color="#a855f7" stop-opacity="0.95" />
-              <stop offset="82%" stop-color="#38bdf8" stop-opacity="0.9" />
-              <stop offset="100%" stop-color="#1d4ed8" stop-opacity="0.25" />
-            </linearGradient>
-
-            <!-- Mid Lobe Volumetric Fill -->
-            <radialGradient id="midLobeFill" cx="240" cy="300" r="150" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#145296" stop-opacity="0.45" />
-              <stop offset="55%" stop-color="#082952" stop-opacity="0.22" />
-              <stop offset="100%" stop-color="#031224" stop-opacity="0" />
-            </radialGradient>
-
-            <!-- Rim Stroke Gradient 3: Lower Lobe & Caustic Path -->
-            <linearGradient id="lowerRimGrad" x1="200" y1="420" x2="300" y2="700" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#1d4ed8" stop-opacity="0.25" />
-              <stop offset="20%" stop-color="#38bdf8" stop-opacity="0.85" />
-              <stop offset="48%" stop-color="#67e8f9" stop-opacity="1" />
-              <stop offset="54%" stop-color="#ffffff" stop-opacity="1" />
-              <stop offset="64%" stop-color="#38bdf8" stop-opacity="0.95" />
-              <stop offset="85%" stop-color="#818cf8" stop-opacity="0.75" />
-              <stop offset="100%" stop-color="#c084fc" stop-opacity="0.25" />
-            </linearGradient>
-
-            <!-- Lower Lobe Volumetric Fill -->
-            <radialGradient id="lowerLobeFill" cx="220" cy="560" r="160" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#0c3f76" stop-opacity="0.38" />
-              <stop offset="65%" stop-color="#051c38" stop-opacity="0.2" />
-              <stop offset="100%" stop-color="#020d1c" stop-opacity="0" />
-            </radialGradient>
-
-            <!-- Rim Stroke Gradient 4: Bottom Wave -->
-            <linearGradient id="bottomRimGrad" x1="0" y1="710" x2="300" y2="820" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25" />
-              <stop offset="28%" stop-color="#67e8f9" stop-opacity="0.95" />
-              <stop offset="60%" stop-color="#c084fc" stop-opacity="1" />
-              <stop offset="85%" stop-color="#e879f9" stop-opacity="0.85" />
-              <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.3" />
-            </linearGradient>
-
-            <!-- Left Edge Glass Reflection Gradient -->
-            <linearGradient id="leftRimGrad" x1="0" y1="40" x2="0" y2="800" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.45" />
-              <stop offset="30%" stop-color="#818cf8" stop-opacity="0.3" />
-              <stop offset="60%" stop-color="#c084fc" stop-opacity="0.45" />
-              <stop offset="90%" stop-color="#38bdf8" stop-opacity="0.35" />
-            </linearGradient>
-
-            <!-- Caustic Flare Core & Aura Gradients -->
-            <radialGradient id="causticCoreGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
-              <stop offset="25%" stop-color="#a5f3fc" stop-opacity="0.95" />
-              <stop offset="55%" stop-color="#38bdf8" stop-opacity="0.7" />
-              <stop offset="100%" stop-color="#0284c7" stop-opacity="0" />
-            </radialGradient>
-
-            <radialGradient id="causticAuraGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8" />
-              <stop offset="30%" stop-color="#0284c7" stop-opacity="0.45" />
-              <stop offset="70%" stop-color="#0369a1" stop-opacity="0.18" />
-              <stop offset="100%" stop-color="#082f4f" stop-opacity="0" />
-            </radialGradient>
-
-            <!-- Glow Filters for Neon Glass Caustics -->
-            <filter id="glowCyan" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur1" />
-              <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur2" />
-              <feMerge>
-                <feMergeNode in="blur2" />
-                <feMergeNode in="blur1" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-
-            <filter id="glowViolet" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur1" />
-              <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur2" />
-              <feMerge>
-                <feMergeNode in="blur2" />
-                <feMergeNode in="blur1" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-
-            <filter id="glintSpread" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
-            </filter>
-          </defs>
-
-          <!-- Deep Midnight Navy Base Canvas -->
-          <rect width="300" height="860" fill="url(#deepNavyBg)" />
-
-          <!-- Left Outer Subtle Glass Refraction Rim -->
-          <line x1="1.5" y1="30" x2="1.5" y2="820" stroke="url(#leftRimGrad)" stroke-width="1.5" />
-
-          <!-- 1. Top Liquid Lobe (Header / Brand Area) -->
-          <g class="liquid-layer liquid-layer-top">
-            <path d="M 0 0 L 225 0 C 270 0 298 35 298 75 C 298 120 280 155 266 180 C 252 205 208 215 174 215 L 0 215 Z" fill="url(#topLobeFill)" />
-            <path d="M 205 0 C 255 0 296 32 296 75 C 296 122 278 158 266 182 C 252 206 205 215 174 215" stroke="url(#topRimGrad)" stroke-width="2.2" stroke-linecap="round" filter="url(#glowCyan)" vector-effect="non-scaling-stroke" />
-            <ellipse cx="294" cy="72" rx="4" ry="12" transform="rotate(-12 294 72)" fill="#ffffff" opacity="0.85" filter="url(#glintSpread)" />
-            <circle cx="294" cy="72" r="18" fill="url(#causticAuraGrad)" opacity="0.65" />
-          </g>
-
-          <!-- 2. Mid-Right Bulging Liquid Lobe (Products & CFT Requests) -->
-          <g class="liquid-layer liquid-layer-mid">
-            <path d="M 0 200 L 195 200 C 248 200 284 230 295 270 C 302 310 296 350 282 380 C 265 415 225 425 185 425 L 0 425 Z" fill="url(#midLobeFill)" />
-            <path d="M 225 198 C 268 215 296 248 298 290 C 300 332 290 365 278 390 C 260 420 215 425 185 426" stroke="url(#midRimGrad)" stroke-width="2.4" stroke-linecap="round" filter="url(#glowViolet)" vector-effect="non-scaling-stroke" />
-            <ellipse cx="297" cy="288" rx="3.5" ry="14" transform="rotate(4 297 288)" fill="#ffffff" opacity="0.8" filter="url(#glintSpread)" />
-          </g>
-
-          <!-- 3. Lower Liquid Lobe & Bright Caustic Flare (Part Qualification & Factory Handover) -->
-          <g class="liquid-layer liquid-layer-lower">
-            <path d="M 0 420 L 190 420 C 238 420 272 460 284 510 C 295 560 290 620 268 665 C 248 705 202 720 162 720 L 0 720 Z" fill="url(#lowerLobeFill)" />
-            <path d="M 185 425 C 240 435 282 475 290 530 C 297 585 288 640 268 675 C 248 710 205 720 168 720" stroke="url(#lowerRimGrad)" stroke-width="2.2" stroke-linecap="round" filter="url(#glowCyan)" vector-effect="non-scaling-stroke" />
-            
-            <!-- Spectacular Caustic Lens Flare on Right Edge -->
-            <g class="liquid-caustic-flare" transform="translate(291, 575)">
-              <circle cx="0" cy="0" r="44" fill="url(#causticAuraGrad)" />
-              <circle cx="0" cy="0" r="17" fill="url(#causticCoreGrad)" />
-              <circle cx="0" cy="0" r="3.5" fill="#ffffff" />
-              <line x1="-24" y1="0" x2="24" y2="0" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" stroke-linecap="round" filter="url(#glintSpread)" />
-              <line x1="-12" y1="-12" x2="12" y2="12" stroke="rgba(56,189,248,0.7)" stroke-width="1.2" stroke-linecap="round" filter="url(#glintSpread)" />
-            </g>
-          </g>
-
-          <!-- 4. Bottom Liquid Wave / Pool (CFT Issue Register & Base) -->
-          <g class="liquid-layer liquid-layer-bottom">
-            <path d="M 0 705 C 60 735 115 765 175 750 C 225 735 268 745 300 775 L 300 860 L 0 860 Z" fill="#04162e" opacity="0.65" />
-            <path d="M 0 705 C 60 735 115 765 175 750 C 225 735 268 745 300 775" stroke="url(#bottomRimGrad)" stroke-width="2.2" stroke-linecap="round" filter="url(#glowViolet)" vector-effect="non-scaling-stroke" />
-            <path d="M 16 790 C 95 840 210 840 290 805" stroke="url(#topRimGrad)" stroke-width="1.2" opacity="0.5" stroke-linecap="round" vector-effect="non-scaling-stroke" />
-          </g>
-        </svg>
-
-        <!-- Liquid-Glass Surface Sheen Overlay -->
-        <div class="liquid-glass-sheen"></div>
-      </div>
-
       <div class="brand">
         <div class="brand-mark logo-mark"><img src="assets/eruvaka_logo.jpg" alt="Eruvaka"></div>
         <div>
@@ -195,7 +24,7 @@
         <button type="button" class="nav-item active" data-view="overview"><span
             class="nav-icon">▦</span><span>Overview</span></button>
         <div class="nav-section">
-          <div class="nav-section-title">VERIFICATION &amp; VALIDATION</div>
+          <div class="nav-section-title liquid-heading">VERIFICATION &amp; VALIDATION</div>
         </div>
         <button type="button" class="nav-item" data-view="products"><span
             class="nav-icon">▦</span><span>Products</span></button>
@@ -204,7 +33,7 @@
             <button type="button" class="nav-section-title nav-section-toggle" aria-expanded="false"
               aria-controls="cftRequestsNavItems">
               <span class="nav-icon" aria-hidden="true">⚠</span>
-              <span>CFT REQUESTS</span>
+              <span>CFT Requests</span>
               <span class="nav-section-chevron" aria-hidden="true">›</span>
             </button>
           </div>
@@ -225,7 +54,7 @@
             <button type="button" class="nav-section-title nav-section-toggle" aria-expanded="false"
               aria-controls="collaborationNavItems">
               <span class="nav-icon" aria-hidden="true">⚙</span>
-              <span>COLLABORATION</span>
+              <span>Collaboration</span>
               <span class="nav-section-chevron" aria-hidden="true">›</span>
             </button>
           </div>
@@ -238,7 +67,7 @@
         </div>
 
         <div class="nav-section">
-          <div class="nav-section-title">PRODUCT ENGINEERING</div>
+          <div class="nav-section-title liquid-heading">PRODUCT ENGINEERING</div>
         </div>
         <button type="button" class="nav-item" data-view="partQualification"><span class="nav-icon">⚙</span><span>Part
             Qualification</span></button>
@@ -246,7 +75,7 @@
             Handover</span></button>
 
         <div class="nav-section">
-          <div class="nav-section-title">CFT ISSUE REGISTER</div>
+          <div class="nav-section-title liquid-heading">CFT ISSUE REGISTER</div>
         </div>
       </nav>
     </aside>
